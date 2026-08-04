@@ -1,0 +1,201 @@
+RemitIQ Household Service
+Development Roadmap
+
+Technology:
+- Laravel
+- PHP
+- PostgreSQL
+- Eloquent ORM
+- JWT Authentication
+- Docker
+
+
+==================================================
+Phase 1 — Infrastructure
+==================================================
+
+□ Docker
+□ Laravel Application Setup
+□ PHP Configuration
+□ PostgreSQL Connection
+□ Redis Connection
+□ Environment Configuration
+□ Application Configuration
+□ Logging Configuration
+□ Health Check Endpoint
+□ Docker Development Workflow
+
+
+==================================================
+Phase 2 — Core Framework
+==================================================
+
+□ API Response Formatter
+□ API Error Handler
+□ Exception Handling
+□ Base Controller
+□ Base Repository
+□ Base Service
+□ Request Validation Layer
+□ Authentication Middleware
+□ Authorization Middleware
+□ Rate Limiting
+□ Security Headers
+□ API Versioning
+
+
+==================================================
+Phase 3 — Database Foundation
+==================================================
+
+□ Database Architecture
+□ Initial Migrations
+□ User Model
+□ Role / Permission Model
+□ Household Models
+□ Budget Models
+□ Remittance Models
+□ Analytics Models
+□ Database Relationships
+□ Database Seeders
+□ Factory Data
+
+
+==================================================
+Phase 4 — Authentication Module
+==================================================
+
+□ User Registration
+□ Login
+□ JWT Token Generation
+□ JWT Validation
+□ Refresh Tokens
+□ Logout
+□ Profile Management
+□ Email Verification
+□ Password Reset
+□ Authentication Tests
+
+
+==================================================
+Phase 5 — Household Module
+==================================================
+
+□ Household CRUD
+□ Create Household
+□ Update Household
+□ Delete Household
+□ Household Members
+□ Member Invitations
+□ Member Roles
+□ Household Permissions
+
+
+==================================================
+Phase 6 — Budget Module
+==================================================
+
+□ Budget Categories
+□ Monthly Budgets
+□ Budget CRUD
+□ Expense Tracking
+□ Budget Calculations
+□ Budget Comparison
+□ Budget History
+
+
+==================================================
+Phase 7 — Remittance Module
+==================================================
+
+□ Remittance Records
+□ Transfer Providers
+□ Amount Sent Tracking
+□ Amount Received Tracking
+□ Exchange Rate Snapshot
+□ Remittance History
+□ Remittance Analytics
+
+
+==================================================
+Phase 8 — Market Service Integration
+==================================================
+
+□ JWT Validation From Household Service
+□ Market Service API Client
+□ Exchange Rate Consumption
+□ Rate History Consumption
+□ Alert Event Consumption
+□ API Communication Layer
+□ Service Timeout Handling
+□ Retry Strategy
+
+
+==================================================
+Phase 9 — Notification Module
+==================================================
+
+□ Notification System
+□ Email Notifications
+□ Push Notification Preparation
+□ Alert Delivery
+□ Notification Preferences
+□ Notification History
+
+
+==================================================
+Phase 10 — Analytics Module
+==================================================
+
+□ Monthly Reports
+□ Spending Analysis
+□ Remittance Trends
+□ Household Financial Insights
+□ Budget Performance
+□ Exchange Rate Impact Analysis
+
+
+==================================================
+Phase 11 — Testing
+==================================================
+
+□ Unit Tests
+□ Feature Tests
+□ Repository Tests
+□ Service Tests
+□ API Tests
+□ Authentication Tests
+□ Database Tests
+
+
+==================================================
+Phase 12 — Production
+==================================================
+
+□ Production Docker Image
+□ Nginx Configuration
+□ Queue Workers
+□ Scheduler
+□ Database Optimization
+□ Security Audit
+□ Monitoring
+□ Metrics
+□ CI/CD Pipeline
+□ API Documentation
+□ Deployment Guide
+
+
+==================================================
+Development Principles
+==================================================
+
+1. Database per service.
+2. Never share databases.
+3. Communicate only through APIs.
+4. Authentication belongs to Household Service.
+5. Market Service never owns users.
+6. Write tests with every feature.
+7. Document important decisions.
+8. Keep services independent.
+9. Prefer simple maintainable solutions.
+10. Build production-ready features incrementally.
