@@ -2,12 +2,16 @@
 
 use App\Exceptions\ApiException;
 use App\Helpers\ApiResponse;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -17,9 +21,33 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function () {
+
+            /**
+             * ===============================================================
+             * API Rate Limiter
+             * ===============================================================
+             *
+             * Limits each client to 60 requests per minute.
+             *
+             * Authenticated users are identified by user ID.
+             * Guests are identified by IP address.
+             *
+             * ===============================================================
+             */
+            RateLimiter::for('api', function (Request $request) {
+                return Limit::perMinute(config('app.rate_limit.per_minute'))
+                    ->by($request->user()?->id ?: $request->ip());
+            });
+
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+
+        $middleware->api([
+            SecurityHeaders::class,
+        ]);
+
     })
     ->withExceptions(function (Exceptions $exceptions): void {
 

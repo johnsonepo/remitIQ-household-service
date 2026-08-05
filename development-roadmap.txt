@@ -31,16 +31,20 @@ Phase 2 — Core Framework
 ==================================================
 
 ✅ API Response Formatter
-⬜ Global Exception Handler
-⬜ Request Validation Layer
-⬜ Base Controller
-⬜ API Versioning
-⬜ Authentication Middleware
-⬜ Authorization Middleware
-⬜ Rate Limiting
-⬜ Security Headers
-⬜ Base Service
-⬜ Base Repository
+✅ Global Exception Handler
+✅ Request Validation Layer
+✅ Base Controller
+
+✅ Base Repository
+✅ Base Service
+
+✅ API Versioning
+
+⏸ Authentication Middleware
+⏸ Authorization Middleware
+
+✅ Rate Limiting
+✅ Security Headers
 
 
 ==================================================

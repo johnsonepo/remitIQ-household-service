@@ -2,22 +2,30 @@
 
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Register all API route groups here.
-|
-*/
+/**
+ * ============================================================================
+ * API Routes
+ * ============================================================================
+ *
+ * Entry point for all API routes.
+ *
+ * Route files are organized by concern and API version to keep the
+ * application modular and future-proof.
+ *
+ * Current Version
+ * ---------------
+ * v1
+ *
+ * Future
+ * ------
+ * - v2
+ * - v3
+ *
+ * ============================================================================
+ */
 
 require __DIR__.'/api/health.php';
 
-// Future modules
-// require __DIR__ . '/api/auth.php';
-// require __DIR__ . '/api/households.php';
-// require __DIR__ . '/api/members.php';
-// require __DIR__ . '/api/budgets.php';
-// require __DIR__ . '/api/expenses.php';
-// require __DIR__ . '/api/remittances.php';
-// require __DIR__ . '/api/notifications.php';
+Route::prefix('v1')
+    ->middleware('throttle:api')
+    ->group(base_path('routes/api/v1.php'));
