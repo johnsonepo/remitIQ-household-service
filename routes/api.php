@@ -1,57 +1,23 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Route;
 
-/**
- * Liveness check — confirms the application is up and responding,
- * with no dependency checks. Kept fast and simple.
- */
-Route::get('/health', function () {
-    return response()->json([
-        'status' => 'ok',
-        'service' => config('app.name'),
-        'version' => '1.0.0',
-        'timestamp' => now()->toIso8601String(),
-    ]);
-});
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+|
+| Register all API route groups here.
+|
+*/
 
-/**
- * Readiness check — confirms the service can actually serve requests
- * that depend on its infrastructure. Checks database and Redis
- * connectivity, returning 503 if either is unreachable, so load
- * balancers/orchestrators can route traffic away from an instance
- * that can't actually do its job.
- */
-Route::get('/health/ready', function () {
-    $checks = [
-        'database' => 'unreachable',
-        'redis' => 'unreachable',
-    ];
+require __DIR__.'/api/health.php';
 
-    try {
-        DB::select('SELECT 1');
-        $checks['database'] = 'ok';
-    } catch (\Throwable $e) {
-        // Left as 'unreachable'
-    }
-
-    try {
-        Redis::ping();
-        $checks['redis'] = 'ok';
-    } catch (\Throwable $e) {
-        // Left as 'unreachable'
-    }
-
-    $allHealthy = collect($checks)->every(fn ($status) => $status === 'ok');
-
-    return response()->json([
-        'status' => $allHealthy ? 'ok' : 'unavailable',
-        'service' => config('app.name'),
-        'version' => '1.0.0',
-        'timestamp' => now()->toIso8601String(),
-        'checks' => $checks,
-    ], $allHealthy ? 200 : 503);
-});
+// Future modules
+// require __DIR__ . '/api/auth.php';
+// require __DIR__ . '/api/households.php';
+// require __DIR__ . '/api/members.php';
+// require __DIR__ . '/api/budgets.php';
+// require __DIR__ . '/api/expenses.php';
+// require __DIR__ . '/api/remittances.php';
+// require __DIR__ . '/api/notifications.php';

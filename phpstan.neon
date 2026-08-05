@@ -1,0 +1,27 @@
+# ==============================================================================
+# RemitIQ Household Service
+# PHPStan Configuration
+# ==============================================================================
+
+includes:
+    - vendor/nunomaduro/larastan/extension.neon
+
+
+parameters:
+
+    paths:
+        - app
+
+    # Start with moderate strictness.
+    # Increase after architecture stabilizes.
+    level: 5
+
+    # Laravel bootstrap
+    bootstrapFiles:
+        - bootstrap/app.php
+
+    # Exclude generated/framework files
+    excludePaths:
+        - database/*
+        - storage/*
+        - bootstrap/cache/*
