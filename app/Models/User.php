@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,6 +30,10 @@ class User extends Authenticatable
         'locale',
         'timezone',
         'is_active',
+        'username',
+        'avatar_path',
+        'country_code',
+        'bio',
     ];
 
     /**
@@ -118,5 +123,18 @@ class User extends Authenticatable
     public function sentInvitations(): HasMany
     {
         return $this->hasMany(HouseholdInvitation::class, 'invited_by');
+    }
+
+    /**
+     * Publicly accessible avatar URL, derived from the stored path.
+     * Returns null if no avatar has been set.
+     */
+    protected function avatarUrl(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->avatar_path
+                ? \Storage::disk('public')->url($this->avatar_path)
+                : null,
+        );
     }
 }
