@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1\Auth;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Api\BaseController;
+use App\Http\Requests\Api\Auth\LoginRequest;
 use App\Http\Requests\Api\Auth\RegisterRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends BaseController
@@ -39,6 +42,33 @@ class AuthController extends BaseController
                 'expires_in' => JWTAuth::factory()->getTTL() * 60,
             ],
             message: 'Account created successfully.',
+        );
+    }
+
+    /**
+     * POST /api/v1/auth/login
+     *
+     * Authenticates a user and issues a JWT.
+     */
+    public function login(LoginRequest $request): JsonResponse
+    {
+        $credentials = $request->validated();
+
+        if (! $token = Auth::guard('api')->attempt($credentials)) {
+            return ApiResponse::unauthorized('Invalid email or password.');
+        }
+
+        /** @var User $user */
+        $user = Auth::guard('api')->user();
+
+        return $this->success(
+            data: [
+                'user' => new UserResource($user),
+                'token' => $token,
+                'token_type' => 'bearer',
+                'expires_in' => JWTAuth::factory()->getTTL() * 60,
+            ],
+            message: 'Login successful.',
         );
     }
 }
