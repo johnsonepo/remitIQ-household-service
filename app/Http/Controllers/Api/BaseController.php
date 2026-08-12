@@ -55,7 +55,6 @@ abstract class BaseController extends Controller
         );
     }
 
-
     /**
      * Return error API response.
      */
@@ -74,7 +73,6 @@ abstract class BaseController extends Controller
         );
     }
 
-
     /**
      * Return created response.
      */
@@ -90,7 +88,6 @@ abstract class BaseController extends Controller
             meta: $meta
         );
     }
-
 
     /**
      * Return paginated response.

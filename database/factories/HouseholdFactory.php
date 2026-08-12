@@ -10,7 +10,7 @@ class HouseholdFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->lastName() . ' Family',
+            'name' => fake()->lastName().' Family',
             'owner_id' => User::factory(),
             'base_currency_code' => fake()->randomElement(['XAF', 'NGN', 'GHS', 'KES']),
             'timezone' => fake()->timezone(),

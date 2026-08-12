@@ -67,21 +67,16 @@ return Application::configure(basePath: dirname(__DIR__))
         |--------------------------------------------------------------------------
         */
 
-        $exceptions->render(function (
-            ApiException $exception,
-            $request
-        ) {
-
-            if ($request->expectsJson()) {
-
-                return ApiResponse::error(
-                    message: $exception->getMessage(),
-                    status: $exception->statusCode(),
-                    errors: $exception->errors(),
-                );
-
+        $exceptions->render(function (ApiException $exception, $request) {
+            if (! $request->expectsJson()) {
+                return null;
             }
 
+            return ApiResponse::error(
+                message: $exception->getMessage(),
+                status: $exception->statusCode(),
+                errors: $exception->errors(),
+            );
         });
 
         /*

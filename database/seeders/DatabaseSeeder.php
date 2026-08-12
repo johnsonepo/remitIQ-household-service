@@ -57,7 +57,7 @@ class DatabaseSeeder extends Seeder
         foreach ($senders as $sender) {
             $household = Household::factory()->create([
                 'owner_id' => $sender->id,
-                'name' => $sender->name . "'s Household",
+                'name' => $sender->name."'s Household",
             ]);
 
             // Owner's own membership record.
@@ -92,6 +92,6 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('Seeded ' . $senders->count() . ' users, each with a household, budgets, and remittances.');
+        $this->command->info('Seeded '.$senders->count().' users, each with a household, budgets, and remittances.');
     }
 }

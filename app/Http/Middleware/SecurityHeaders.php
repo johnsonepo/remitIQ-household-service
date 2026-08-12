@@ -32,7 +32,24 @@ class SecurityHeaders
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-        $response->headers->set('X-XSS-Protection', '1; mode=block');
+
+        // Instructs browsers/clients to only ever connect over HTTPS,
+        // preventing downgrade attacks. Only meaningful in production
+        // (over an actual HTTPS connection) — harmless to send in
+        // local dev over HTTP, browsers just ignore it there.
+        if (app()->environment('production')) {
+            $response->headers->set(
+                'Strict-Transport-Security',
+                'max-age=31536000; includeSubDomains',
+            );
+        }
+
+        // A minimal CSP appropriate for a pure JSON API — no scripts,
+        // styles, or frames should ever be rendered here.
+        $response->headers->set(
+            'Content-Security-Policy',
+            "default-src 'none'; frame-ancestors 'none'",
+        );
 
         return $response;
     }

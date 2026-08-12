@@ -51,7 +51,6 @@ Phase 2 — Core Framework
 Phase 3 — Database Foundation
 ==================================================
 
-□ Database Architecture
 □ Initial Migrations
 □ User Model
 □ Role / Permission Model

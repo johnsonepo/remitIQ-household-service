@@ -2,10 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
-use App\Helpers\ApiResponse;
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Http\Exceptions\HttpResponseException;
 
 /**
  * ============================================================================
@@ -32,13 +29,12 @@ use Illuminate\Http\Exceptions\HttpResponseException;
  *     }
  * }
  *
- *
- * Responsibilities:
- *
- * ✓ Centralized validation handling
- * ✓ Consistent API error response
- * ✓ JSON API friendly
- * ✓ Removes validation logic from controllers
+ * Failed validation is intentionally NOT overridden here — Laravel's
+ * default FormRequest::failedValidation() throws ValidationException,
+ * which is already caught and formatted centrally in bootstrap/app.php
+ * via ApiResponse::validation(). Overriding it here would create a
+ * second, parallel formatting path that could drift out of sync with
+ * the central handler.
  *
  * ============================================================================
  */
@@ -53,23 +49,5 @@ abstract class BaseFormRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
-    }
-
-    /**
-     * Handle failed validation.
-     *
-     * Laravel normally redirects for web requests.
-     * APIs should always return JSON.
-     */
-    protected function failedValidation(
-        Validator $validator
-    ): void {
-
-        throw new HttpResponseException(
-            ApiResponse::validation(
-                errors: $validator->errors()
-            )
-
-        );
     }
 }

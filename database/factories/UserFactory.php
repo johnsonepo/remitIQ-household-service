@@ -16,7 +16,7 @@ class UserFactory extends Factory
 
         return [
             'name' => $name,
-            'username' => Str::slug($name) . '-' . fake()->unique()->numberBetween(100, 9999),
+            'username' => Str::slug($name).'-'.fake()->unique()->numberBetween(100, 9999),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 class HouseholdInvitation extends Model
 {
@@ -40,7 +41,10 @@ class HouseholdInvitation extends Model
 
     public function isExpired(): bool
     {
-        return $this->expires_at->isPast();
+        /** @var Carbon $expiresAt */
+        $expiresAt = $this->expires_at;
+
+        return $expiresAt->isPast();
     }
 
     public function isPending(): bool

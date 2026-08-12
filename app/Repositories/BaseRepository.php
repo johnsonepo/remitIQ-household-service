@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Exceptions\ApiException;
 use App\Repositories\Contracts\RepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -74,13 +73,7 @@ abstract class BaseRepository implements RepositoryInterface
      */
     public function findOrFail(int|string $id): Model
     {
-        $record = $this->find($id);
-
-        if (! $record) {
-            throw ApiException::notFound('Resource not found.');
-        }
-
-        return $record;
+        return $this->model->findOrFail($id);
     }
 
     /**

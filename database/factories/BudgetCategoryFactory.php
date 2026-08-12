@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class BudgetCategoryFactory extends Factory
@@ -22,7 +23,7 @@ class BudgetCategoryFactory extends Factory
     public function custom(): static
     {
         return $this->state(fn (array $attributes) => [
-            'user_id' => \App\Models\User::factory(),
+            'user_id' => User::factory(),
             'is_default' => false,
         ]);
     }
