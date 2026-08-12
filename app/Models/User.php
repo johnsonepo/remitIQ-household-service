@@ -11,17 +11,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
-class User extends Authenticatable
+class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
@@ -36,21 +32,11 @@ class User extends Authenticatable
         'bio',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -62,73 +48,29 @@ class User extends Authenticatable
     }
 
     /**
-     * Households this user owns.
+     * The identifier that will be stored in the JWT's "sub" claim —
+     * this is what Market Service (and any other consumer validating
+     * this JWT) will see as the userId. Matches the plain userId
+     * string convention already used in Market Service's
+     * CommunityRate/AlertRule tables.
      */
-    public function ownedHouseholds(): HasMany
+    public function getJWTIdentifier(): mixed
     {
-        return $this->hasMany(Household::class, 'owner_id');
+        return $this->getKey();
     }
 
     /**
-     * All households this user belongs to (owner or member), via the
-     * household_members pivot. Role is available on the pivot, not
-     * on this relation directly — see memberships() for the pivot
-     * records themselves, e.g. to check a specific role.
+     * Custom claims embedded in every JWT for this user. Kept
+     * minimal — the token should be a lightweight identity proof,
+     * not a place to smuggle mutable profile data (username, avatar,
+     * etc. can change; embedding them here would mean a token could
+     * carry stale data until it expires).
      */
-    public function households(): BelongsToMany
+    public function getJWTCustomClaims(): array
     {
-        return $this->belongsToMany(Household::class, 'household_members')
-            ->withPivot(['id', 'role', 'joined_at'])
-            ->withTimestamps();
+        return [];
     }
 
-    /**
-     * This user's household membership records directly (useful when
-     * you need the pivot row itself, e.g. to check ->role or ->id).
-     */
-    public function memberships(): HasMany
-    {
-        return $this->hasMany(HouseholdMember::class);
-    }
-
-    /**
-     * Budgets this user tracks (per the confirmed design: budgets are
-     * owned by the tracking user, not the household collectively).
-     */
-    public function budgets(): HasMany
-    {
-        return $this->hasMany(Budget::class);
-    }
-
-    /**
-     * Custom budget categories this user created (default/system
-     * categories have a null user_id and aren't included here).
-     */
-    public function budgetCategories(): HasMany
-    {
-        return $this->hasMany(BudgetCategory::class);
-    }
-
-    /**
-     * Remittances this user has sent.
-     */
-    public function remittances(): HasMany
-    {
-        return $this->hasMany(Remittance::class);
-    }
-
-    /**
-     * Household invitations this user has sent to others.
-     */
-    public function sentInvitations(): HasMany
-    {
-        return $this->hasMany(HouseholdInvitation::class, 'invited_by');
-    }
-
-    /**
-     * Publicly accessible avatar URL, derived from the stored path.
-     * Returns null if no avatar has been set.
-     */
     protected function avatarUrl(): Attribute
     {
         return Attribute::make(
@@ -136,5 +78,42 @@ class User extends Authenticatable
                 ? \Storage::disk('public')->url($this->avatar_path)
                 : null,
         );
+    }
+
+    public function ownedHouseholds(): HasMany
+    {
+        return $this->hasMany(Household::class, 'owner_id');
+    }
+
+    public function households(): BelongsToMany
+    {
+        return $this->belongsToMany(Household::class, 'household_members')
+            ->withPivot(['id', 'role', 'joined_at'])
+            ->withTimestamps();
+    }
+
+    public function memberships(): HasMany
+    {
+        return $this->hasMany(HouseholdMember::class);
+    }
+
+    public function budgets(): HasMany
+    {
+        return $this->hasMany(Budget::class);
+    }
+
+    public function budgetCategories(): HasMany
+    {
+        return $this->hasMany(BudgetCategory::class);
+    }
+
+    public function remittances(): HasMany
+    {
+        return $this->hasMany(Remittance::class);
+    }
+
+    public function sentInvitations(): HasMany
+    {
+        return $this->hasMany(HouseholdInvitation::class, 'invited_by');
     }
 }

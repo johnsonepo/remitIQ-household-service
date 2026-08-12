@@ -142,6 +142,15 @@ RUN deluser www-data 2>/dev/null; \
         www-data
 
 
+# Git refuses to operate on bind-mounted directories owned by a
+# different UID than the running user, treating it as a security
+# risk (dubious ownership). Since /var/www/html is bind-mounted from
+# the host, explicitly trust it — otherwise commands like
+# `composer show` print a "dubious ownership" warning (Composer
+# shells out to git internally for some operations).
+RUN git config --global --add safe.directory /var/www/html
+
+
 
 COPY . .
 
