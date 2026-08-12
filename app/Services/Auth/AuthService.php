@@ -5,6 +5,8 @@ namespace App\Services\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use App\Exceptions\ApiException;
+use Illuminate\Support\Facades\Hash;
 
 class AuthService
 {
@@ -135,6 +137,59 @@ class AuthService
     {
         Auth::guard('api')->logout();
     }
+
+    /**
+ * Update the authenticated user's profile fields.
+ *
+ * Only the fields present in $data are applied — this mirrors
+ * PATCH semantics, so a client can send just the fields it wants
+ * to change without needing to resend the entire profile.
+ *
+ * @param  array<string, mixed>  $data
+ */
+public function updateProfile(User $user, array $data): User
+{
+    $user->update($data);
+
+    return $user->fresh();
+}
+
+/**
+ * Change the authenticated user's password.
+ *
+ * The current password must be verified before the new password is
+ * persisted. The User model is responsible for hashing the new password
+ * through its configured 'hashed' cast.
+ *
+ * After a successful password change, the JWT used for the current
+ * request is invalidated. This forces the client that performed the
+ * password change to authenticate again.
+ *
+ * Note:
+ * Invalidating the current JWT does not automatically revoke other JWTs
+ * that may have previously been issued to the same user. Global token
+ * revocation can be introduced later if the authentication architecture
+ * requires it.
+ *
+ * @throws ApiException When the current password is incorrect.
+ */
+public function changePassword(
+    User $user,
+    string $currentPassword,
+    string $newPassword
+): void {
+    if (! Hash::check($currentPassword, $user->password)) {
+        throw ApiException::badRequest(
+            'Current password is incorrect.'
+        );
+    }
+
+    $user->update([
+        'password' => $newPassword,
+    ]);
+
+    Auth::guard('api')->logout();
+}
 
     /**
      * Build the standard authentication token payload.

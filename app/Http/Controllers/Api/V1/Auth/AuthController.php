@@ -4,11 +4,14 @@ namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Api\BaseController;
+use App\Http\Requests\Api\Auth\ChangePasswordRequest;
 use App\Http\Requests\Api\Auth\LoginRequest;
 use App\Http\Requests\Api\Auth\RegisterRequest;
+use App\Http\Requests\Api\Auth\UpdateProfileRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Services\Auth\AuthService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Throwable;
 
 class AuthController extends BaseController
@@ -23,8 +26,7 @@ class AuthController extends BaseController
      */
     public function __construct(
         private readonly AuthService $authService,
-    ) {
-    }
+    ) {}
 
     /**
      * POST /api/v1/auth/register
@@ -95,6 +97,86 @@ class AuthController extends BaseController
                 'Unable to refresh token.'
             );
         }
+    }
+
+    /**
+     * POST /api/v1/auth/logout
+     *
+     * Invalidates the currently authenticated JWT.
+     */
+    public function logout(): JsonResponse
+    {
+        $this->authService->logout();
+
+        return $this->success(
+            message: 'Logout successful.',
+        );
+    }
+
+
+    /**
+     * GET /api/v1/auth/me
+     *
+     * Return the profile of the currently authenticated user.
+     *
+     * Authentication middleware guarantees that a valid JWT has already
+     * been resolved before this action is reached.
+     *
+     * UserResource is used to keep the public API representation separate
+     * from the internal Eloquent User model.
+     */
+    public function me(Request $request): JsonResponse
+    {
+        return $this->success(
+            data: new UserResource($request->user()),
+            message: 'Profile retrieved successfully.',
+        );
+    }
+
+    /**
+     * PATCH /api/v1/auth/profile
+     *
+     * Update only the profile fields supplied by the client.
+     *
+     * UpdateProfileRequest uses "sometimes" validation rules, so this
+     * endpoint follows PATCH semantics: clients only need to submit the
+     * fields they want to change.
+     */
+    public function updateProfile(
+        UpdateProfileRequest $request
+    ): JsonResponse {
+        $user = $this->authService->updateProfile(
+            $request->user(),
+            $request->validated(),
+        );
+
+        return $this->success(
+            data: new UserResource($user),
+            message: 'Profile updated successfully.',
+        );
+    }
+
+    /**
+     * PUT /api/v1/auth/profile/password
+     *
+     * Change the authenticated user's password.
+     *
+     * The service verifies the current password, updates the new password,
+     * and invalidates the JWT used for this request. The client must
+     * authenticate again after a successful password change.
+     */
+    public function changePassword(
+        ChangePasswordRequest $request
+    ): JsonResponse {
+        $this->authService->changePassword(
+            $request->user(),
+            $request->validated('current_password'),
+            $request->validated('password'),
+        );
+
+        return $this->success(
+            message: 'Password changed successfully. Please log in again.',
+        );
     }
 
     /**
