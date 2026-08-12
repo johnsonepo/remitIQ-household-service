@@ -81,6 +81,11 @@ class AuthService
         /** @var User $user */
         $user = Auth::guard('api')->user();
 
+        if (! $user->is_active) {
+            Auth::guard('api')->logout(); // invalidate the token we just issued
+            return null;
+        }
+
         return $this->tokenResponse($user, $token);
     }
 
@@ -113,6 +118,22 @@ class AuthService
         $user = Auth::guard('api')->user();
 
         return $this->tokenResponse($user, $token);
+    }
+
+    /**
+     * Logout the currently authenticated user by invalidating
+     * the JWT presented with the current request.
+     *
+     * JWT authentication is stateless, so logout does not destroy
+     * a server-side session. Instead, the current token is added to
+     * the JWT blacklist and can no longer be used for authentication.
+     *
+     * The JWT package must have blacklist support enabled for this
+     * invalidation mechanism to work correctly.
+     */
+    public function logout(): void
+    {
+        Auth::guard('api')->logout();
     }
 
     /**
