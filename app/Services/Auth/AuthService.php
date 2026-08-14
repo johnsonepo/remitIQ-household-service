@@ -4,6 +4,7 @@ namespace App\Services\Auth;
 
 use App\Exceptions\ApiException;
 use App\Models\User;
+use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
@@ -46,6 +47,8 @@ class AuthService
             'country_code' => $data['country_code'] ?? null,
             'phone' => $data['phone'] ?? null,
         ]);
+
+        $user->sendEmailVerificationNotification();
 
         $token = JWTAuth::fromUser($user);
 
@@ -174,7 +177,7 @@ class AuthService
      *
      * @throws ApiException When the current password is incorrect.
      */
-    public function changePassword(User $user, string $currentPassword, string $newPassword): void 
+    public function changePassword(User $user, string $currentPassword, string $newPassword): void
     {
         if (! Hash::check($currentPassword, $user->password)) {
             throw ApiException::badRequest(
@@ -217,5 +220,43 @@ class AuthService
             'token_type' => 'bearer',
             'expires_in' => JWTAuth::factory()->getTTL() * 60,
         ];
+    }
+
+    /**
+     * Verify a user's email using the id/hash pair from the signed
+     * verification link. The signature/expiry itself is validated by
+     * Laravel's 'signed' route middleware before this method runs.
+     *
+     * @throws ApiException if the hash doesn't match, or the email is
+     *                      already verified.
+     */
+    public function verifyEmail(int $id, string $hash): void
+    {
+        $user = User::findOrFail($id);
+
+        if (! hash_equals(sha1($user->getEmailForVerification()), $hash)) {
+            throw ApiException::badRequest('Invalid verification link.');
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            throw ApiException::conflict('Email already verified.');
+        }
+
+        $user->markEmailAsVerified();
+        event(new Verified($user));
+    }
+
+    /**
+     * Resend the verification email to the authenticated user.
+     *
+     * @throws ApiException if the email is already verified.
+     */
+    public function resendVerificationEmail(User $user): void
+    {
+        if ($user->hasVerifiedEmail()) {
+            throw ApiException::conflict('Email already verified.');
+        }
+
+        $user->sendEmailVerificationNotification();
     }
 }

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
  * ----------------
  * - Register
  * - Login
+ * - Email verification
  *
  * Protected endpoints
  * -------------------
@@ -22,18 +23,17 @@ use Illuminate\Support\Facades\Route;
  * - Current profile
  * - Profile update
  * - Password change
+ * - Resend verification email
  *
  * ============================================================================
  */
+
 Route::prefix('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
     | Public Authentication
     |--------------------------------------------------------------------------
-    |
-    | These endpoints do not require an existing JWT.
-    |
     */
 
     Route::post('/register', [AuthController::class, 'register'])
@@ -44,10 +44,23 @@ Route::prefix('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Email Verification
+    |--------------------------------------------------------------------------
+    |
+    | The frontend receives the verification link by email, extracts the
+    | user ID and verification hash, then sends them to this API endpoint.
+    |
+    */
+
+    Route::post('/email/verify', [AuthController::class, 'verifyEmail'])
+        ->name('auth.email.verify');
+
+    /*
+    |--------------------------------------------------------------------------
     | Protected Authentication
     |--------------------------------------------------------------------------
     |
-    | All routes in this group require a valid JWT through the API guard.
+    | These routes require a valid JWT through the API guard.
     |
     */
 
@@ -67,6 +80,9 @@ Route::prefix('auth')->group(function () {
 
         Route::put('/profile/password', [AuthController::class, 'changePassword'])
             ->name('auth.profile.password');
+
+        Route::post('/email/resend', [AuthController::class, 'resendVerificationEmail'])
+            ->name('auth.email.resend');
 
     });
 

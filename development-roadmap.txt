@@ -92,6 +92,7 @@ Phase 5 — Household Module
 □ Member Invitations
 □ Member Roles
 □ Household Permissions
+□ Household test
 
 
 ==================================================
@@ -105,6 +106,7 @@ Phase 6 — Budget Module
 □ Budget Calculations
 □ Budget Comparison
 □ Budget History
+□ Budget test
 
 
 ==================================================
@@ -118,6 +120,7 @@ Phase 7 — Remittance Module
 □ Exchange Rate Snapshot
 □ Remittance History
 □ Remittance Analytics
+□ Remittance test
 
 
 ==================================================

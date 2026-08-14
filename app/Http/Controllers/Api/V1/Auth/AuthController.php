@@ -8,6 +8,7 @@ use App\Http\Requests\Api\Auth\ChangePasswordRequest;
 use App\Http\Requests\Api\Auth\LoginRequest;
 use App\Http\Requests\Api\Auth\RegisterRequest;
 use App\Http\Requests\Api\Auth\UpdateProfileRequest;
+use App\Http\Requests\Api\Auth\VerifyEmailRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Services\Auth\AuthService;
 use Illuminate\Http\JsonResponse;
@@ -193,5 +194,31 @@ class AuthController extends BaseController
             'token_type' => $result['token_type'],
             'expires_in' => $result['expires_in'],
         ];
+    }
+
+    /**
+     * POST /api/v1/auth/email/verify
+     *
+     * Body: { "id": 9, "hash": "..." } — sent by the frontend after
+     * parsing the signed link from the verification email.
+     */
+    public function verifyEmail(VerifyEmailRequest $request): JsonResponse
+    {
+        $this->authService->verifyEmail(
+            $request->validated('id'),
+            $request->validated('hash'),
+        );
+
+        return $this->success(message: 'Email verified successfully.');
+    }
+
+    /**
+     * POST /api/v1/auth/email/resend
+     */
+    public function resendVerificationEmail(Request $request): JsonResponse
+    {
+        $this->authService->resendVerificationEmail($request->user());
+
+        return $this->success(message: 'Verification email sent.');
     }
 }
