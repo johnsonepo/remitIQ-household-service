@@ -151,6 +151,13 @@ RUN deluser www-data 2>/dev/null; \
 RUN git config --global --add safe.directory /var/www/html
 
 
+# Development opcache config: validate_timestamps=1 so PHP-FPM
+# rechecks each file's mtime on every request and recompiles if
+# changed — essential for local dev with a bind mount, since without
+# it, code edits are invisible until the container is restarted.
+COPY docker/php/opcache-dev.ini /usr/local/etc/php/conf.d/opcache.ini
+
+
 
 COPY . .
 
@@ -183,6 +190,12 @@ CMD ["php-fpm"]
 # ------------------------------------------------------------------------------
 
 FROM php-base AS production
+
+
+# Production opcache config: validate_timestamps=0 for maximum
+# performance, appropriate since production code only changes via a
+# fresh image build/deploy, never a live file edit.
+COPY docker/php/opcache-prod.ini /usr/local/etc/php/conf.d/opcache.ini
 
 
 COPY . .

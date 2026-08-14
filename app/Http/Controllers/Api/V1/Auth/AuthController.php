@@ -113,7 +113,6 @@ class AuthController extends BaseController
         );
     }
 
-
     /**
      * GET /api/v1/auth/me
      *
