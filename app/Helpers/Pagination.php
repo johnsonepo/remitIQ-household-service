@@ -32,9 +32,8 @@ class Pagination
     /**
      * Generate pagination metadata.
      */
-    public static function meta(
-        LengthAwarePaginator $paginator
-    ): array {
+    public static function meta(LengthAwarePaginator $paginator): array
+    {
 
         return [
             'pagination' => [

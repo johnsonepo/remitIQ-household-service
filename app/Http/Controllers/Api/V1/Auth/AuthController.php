@@ -27,9 +27,7 @@ class AuthController extends BaseController
      * requests, invoking the appropriate service operation, transforming
      * resources, and returning API responses.
      */
-    public function __construct(
-        private readonly AuthService $authService,
-    ) {}
+    public function __construct(private readonly AuthService $authService) {}
 
     /**
      * POST /api/v1/auth/register
@@ -39,14 +37,9 @@ class AuthController extends BaseController
      */
     public function register(RegisterRequest $request): JsonResponse
     {
-        $result = $this->authService->register(
-            $request->validated()
-        );
+        $result = $this->authService->register($request->validated());
 
-        return $this->created(
-            data: $this->transformAuthResult($result),
-            message: 'Account created successfully.',
-        );
+        return $this->created(data: $this->transformAuthResult($result), message: 'Account created successfully.');
     }
 
     /**
@@ -60,20 +53,13 @@ class AuthController extends BaseController
      */
     public function login(LoginRequest $request): JsonResponse
     {
-        $result = $this->authService->login(
-            $request->validated()
-        );
+        $result = $this->authService->login($request->validated());
 
         if ($result === null) {
-            return ApiResponse::unauthorized(
-                'Invalid email or password.'
-            );
+            return ApiResponse::unauthorized('Invalid email or password.');
         }
 
-        return $this->success(
-            data: $this->transformAuthResult($result),
-            message: 'Login successful.',
-        );
+        return $this->success(data: $this->transformAuthResult($result), message: 'Login successful.');
     }
 
     /**
@@ -91,14 +77,9 @@ class AuthController extends BaseController
         try {
             $result = $this->authService->refresh();
 
-            return $this->success(
-                data: $this->transformAuthResult($result),
-                message: 'Token refreshed successfully.',
-            );
+            return $this->success(data: $this->transformAuthResult($result), message: 'Token refreshed successfully.');
         } catch (Throwable) {
-            return ApiResponse::unauthorized(
-                'Unable to refresh token.'
-            );
+            return ApiResponse::unauthorized('Unable to refresh token.');
         }
     }
 
@@ -111,9 +92,7 @@ class AuthController extends BaseController
     {
         $this->authService->logout();
 
-        return $this->success(
-            message: 'Logout successful.',
-        );
+        return $this->success(message: 'Logout successful.');
     }
 
     /**
@@ -129,10 +108,7 @@ class AuthController extends BaseController
      */
     public function me(Request $request): JsonResponse
     {
-        return $this->success(
-            data: new UserResource($request->user()),
-            message: 'Profile retrieved successfully.',
-        );
+        return $this->success(data: new UserResource($request->user()), message: 'Profile retrieved successfully.');
     }
 
     /**
@@ -144,18 +120,11 @@ class AuthController extends BaseController
      * endpoint follows PATCH semantics: clients only need to submit the
      * fields they want to change.
      */
-    public function updateProfile(
-        UpdateProfileRequest $request
-    ): JsonResponse {
-        $user = $this->authService->updateProfile(
-            $request->user(),
-            $request->validated(),
-        );
+    public function updateProfile(UpdateProfileRequest $request): JsonResponse
+    {
+        $user = $this->authService->updateProfile($request->user(), $request->validated());
 
-        return $this->success(
-            data: new UserResource($user),
-            message: 'Profile updated successfully.',
-        );
+        return $this->success(data: new UserResource($user), message: 'Profile updated successfully.');
     }
 
     /**
@@ -167,18 +136,11 @@ class AuthController extends BaseController
      * and invalidates the JWT used for this request. The client must
      * authenticate again after a successful password change.
      */
-    public function changePassword(
-        ChangePasswordRequest $request
-    ): JsonResponse {
-        $this->authService->changePassword(
-            $request->user(),
-            $request->validated('current_password'),
-            $request->validated('password'),
-        );
+    public function changePassword(ChangePasswordRequest $request): JsonResponse
+    {
+        $this->authService->changePassword($request->user(), $request->validated('current_password'), $request->validated('password'));
 
-        return $this->success(
-            message: 'Password changed successfully. Please log in again.',
-        );
+        return $this->success(message: 'Password changed successfully. Please log in again.');
     }
 
     /**
@@ -206,10 +168,7 @@ class AuthController extends BaseController
      */
     public function verifyEmail(VerifyEmailRequest $request): JsonResponse
     {
-        $this->authService->verifyEmail(
-            $request->validated('id'),
-            $request->validated('hash'),
-        );
+        $this->authService->verifyEmail($request->validated('id'), $request->validated('hash'));
 
         return $this->success(message: 'Email verified successfully.');
     }
@@ -229,13 +188,9 @@ class AuthController extends BaseController
      */
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $this->authService->forgotPassword(
-            $request->validated('email')
-        );
+        $this->authService->forgotPassword($request->validated('email'));
 
-        return $this->success(
-            message: 'If an account exists for that email, a password reset link has been sent.'
-        );
+        return $this->success(message: 'If an account exists for that email, a password reset link has been sent.');
     }
 
     /**
@@ -243,14 +198,8 @@ class AuthController extends BaseController
      */
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
     {
-        $this->authService->resetPassword(
-            $request->validated('token'),
-            $request->validated('email'),
-            $request->validated('password'),
-        );
+        $this->authService->resetPassword($request->validated('token'), $request->validated('email'), $request->validated('password'));
 
-        return $this->success(
-            message: 'Password reset successfully.'
-        );
+        return $this->success(message: 'Password reset successfully.');
     }
 }

@@ -38,18 +38,12 @@ class SecurityHeaders
         // (over an actual HTTPS connection) — harmless to send in
         // local dev over HTTP, browsers just ignore it there.
         if (app()->environment('production')) {
-            $response->headers->set(
-                'Strict-Transport-Security',
-                'max-age=31536000; includeSubDomains',
-            );
+            $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
         // A minimal CSP appropriate for a pure JSON API — no scripts,
         // styles, or frames should ever be rendered here.
-        $response->headers->set(
-            'Content-Security-Policy',
-            "default-src 'none'; frame-ancestors 'none'",
-        );
+        $response->headers->set('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
 
         return $response;
     }

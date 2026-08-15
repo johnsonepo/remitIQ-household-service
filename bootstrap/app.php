@@ -16,32 +16,26 @@ use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
-    ->withRouting(
-        web: __DIR__.'/../routes/web.php',
-        api: __DIR__.'/../routes/api.php',
-        commands: __DIR__.'/../routes/console.php',
-        health: '/up',
-        then: function () {
+    ->withRouting(web: __DIR__.'/../routes/web.php', api: __DIR__.'/../routes/api.php', commands: __DIR__.'/../routes/console.php', health: '/up', then: function () {
 
-            /**
-             * ===============================================================
-             * API Rate Limiter
-             * ===============================================================
-             *
-             * Limits each client to 60 requests per minute.
-             *
-             * Authenticated users are identified by user ID.
-             * Guests are identified by IP address.
-             *
-             * ===============================================================
-             */
-            RateLimiter::for('api', function (Request $request) {
-                return Limit::perMinute(config('app.rate_limit.per_minute'))
-                    ->by($request->user()?->id ?: $request->ip());
-            });
+        /**
+         * ===============================================================
+         * API Rate Limiter
+         * ===============================================================
+         *
+         * Limits each client to 60 requests per minute.
+         *
+         * Authenticated users are identified by user ID.
+         * Guests are identified by IP address.
+         *
+         * ===============================================================
+         */
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(config('app.rate_limit.per_minute'))
+                ->by($request->user()?->id ?: $request->ip());
+        });
 
-        },
-    )
+    }, )
     ->withMiddleware(function (Middleware $middleware): void {
 
         $middleware->api([
@@ -72,11 +66,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            return ApiResponse::error(
-                message: $exception->getMessage(),
-                status: $exception->statusCode(),
-                errors: $exception->errors(),
-            );
+            return ApiResponse::error(message: $exception->getMessage(), status: $exception->statusCode(), errors: $exception->errors());
         });
 
         /*
@@ -85,19 +75,13 @@ return Application::configure(basePath: dirname(__DIR__))
 |--------------------------------------------------------------------------
 */
 
-        $exceptions->render(function (
-            ValidationException $exception,
-            $request
-        ) {
+        $exceptions->render(function (ValidationException $exception, $request) {
 
             if (! $request->expectsJson()) {
                 return null;
             }
 
-            return ApiResponse::validation(
-                errors: $exception->errors(),
-                message: $exception->getMessage(),
-            );
+            return ApiResponse::validation(errors: $exception->errors(), message: $exception->getMessage());
 
         });
 
@@ -107,18 +91,13 @@ return Application::configure(basePath: dirname(__DIR__))
 |--------------------------------------------------------------------------
 */
 
-        $exceptions->render(function (
-            AuthenticationException $exception,
-            $request
-        ) {
+        $exceptions->render(function (AuthenticationException $exception, $request) {
 
             if (! $request->expectsJson()) {
                 return null;
             }
 
-            return ApiResponse::unauthorized(
-                $exception->getMessage() ?: 'Unauthorized.'
-            );
+            return ApiResponse::unauthorized($exception->getMessage() ?: 'Unauthorized.');
 
         });
 
@@ -128,18 +107,13 @@ return Application::configure(basePath: dirname(__DIR__))
 |--------------------------------------------------------------------------
 */
 
-        $exceptions->render(function (
-            AuthorizationException $exception,
-            $request
-        ) {
+        $exceptions->render(function (AuthorizationException $exception, $request) {
 
             if (! $request->expectsJson()) {
                 return null;
             }
 
-            return ApiResponse::forbidden(
-                $exception->getMessage() ?: 'Forbidden.'
-            );
+            return ApiResponse::forbidden($exception->getMessage() ?: 'Forbidden.');
 
         });
 
@@ -149,22 +123,15 @@ return Application::configure(basePath: dirname(__DIR__))
 |--------------------------------------------------------------------------
 */
 
-        $exceptions->render(function (
-            ModelNotFoundException $exception,
-            $request
-        ) {
+        $exceptions->render(function (ModelNotFoundException $exception, $request) {
 
             if (! $request->expectsJson()) {
                 return null;
             }
 
-            return ApiResponse::notFound(
-
-                config('app.debug')
+            return ApiResponse::notFound(config('app.debug')
                     ? class_basename($exception->getModel()).' not found.'
-                    : 'Resource not found.'
-
-            );
+                    : 'Resource not found.');
 
         });
 
@@ -174,10 +141,7 @@ return Application::configure(basePath: dirname(__DIR__))
 |--------------------------------------------------------------------------
 */
 
-        $exceptions->render(function (
-            HttpExceptionInterface $exception,
-            $request
-        ) {
+        $exceptions->render(function (HttpExceptionInterface $exception, $request) {
 
             if (! $request->expectsJson()) {
                 return null;
@@ -206,10 +170,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
             }
 
-            return ApiResponse::error(
-                message: $message,
-                status: $exception->getStatusCode(),
-            );
+            return ApiResponse::error(message: $message, status: $exception->getStatusCode());
 
         });
 
@@ -219,29 +180,19 @@ return Application::configure(basePath: dirname(__DIR__))
         |--------------------------------------------------------------------------
         */
 
-        $exceptions->render(function (
-            Throwable $exception,
-            $request
-        ) {
+        $exceptions->render(function (Throwable $exception, $request) {
 
             if ($request->expectsJson()) {
 
-                return ApiResponse::error(
-
-                    message: config('app.debug')
+                return ApiResponse::error(message: config('app.debug')
                         ? $exception->getMessage()
-                        : 'Internal server error.',
-
-                    status: 500,
-
-                    errors: config('app.debug')
+                        : 'Internal server error.', status: 500, errors: config('app.debug')
                         ? [
                             'exception' => class_basename($exception),
                             'file' => $exception->getFile(),
                             'line' => $exception->getLine(),
                         ]
-                        : null
-                );
+                        : null);
 
             }
 

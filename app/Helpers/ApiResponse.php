@@ -77,12 +77,8 @@ class ApiResponse
      *                            Optional metadata such as pagination,
      *                            filters, totals, etc.
      */
-    public static function success(
-        mixed $data = null,
-        string $message = 'Request successful.',
-        int $status = 200,
-        ?array $meta = []
-    ): JsonResponse {
+    public static function success(mixed $data = null, string $message = 'Request successful.', int $status = 200, ?array $meta = []): JsonResponse
+    {
 
         return response()->json([
             'success' => true,
@@ -106,12 +102,8 @@ class ApiResponse
      * @param  array|null  $meta
      *                            Optional metadata.
      */
-    public static function error(
-        string $message = 'Request failed.',
-        int $status = 400,
-        mixed $errors = null,
-        ?array $meta = []
-    ): JsonResponse {
+    public static function error(string $message = 'Request failed.', int $status = 400, mixed $errors = null, ?array $meta = []): JsonResponse
+    {
 
         return response()->json([
             'success' => false,
@@ -125,115 +117,73 @@ class ApiResponse
     /**
      * HTTP 201 Created
      */
-    public static function created(
-        mixed $data,
-        string $message = 'Resource created successfully.',
-        ?array $meta = []
-    ): JsonResponse {
+    public static function created(mixed $data, string $message = 'Resource created successfully.', ?array $meta = []): JsonResponse
+    {
 
-        return self::success(
-            data: $data,
-            message: $message,
-            status: 201,
-            meta: $meta
-        );
+        return self::success(data: $data, message: $message, status: 201, meta: $meta);
     }
 
     /**
      * HTTP 200 Updated
      */
-    public static function updated(
-        mixed $data,
-        string $message = 'Resource updated successfully.',
-        ?array $meta = []
-    ): JsonResponse {
+    public static function updated(mixed $data, string $message = 'Resource updated successfully.', ?array $meta = []): JsonResponse
+    {
 
-        return self::success(
-            data: $data,
-            message: $message,
-            status: 200,
-            meta: $meta
-        );
+        return self::success(data: $data, message: $message, status: 200, meta: $meta);
     }
 
     /**
      * HTTP 200 Deleted
      */
-    public static function deleted(
-        string $message = 'Resource deleted successfully.'
-    ): JsonResponse {
+    public static function deleted(string $message = 'Resource deleted successfully.'): JsonResponse
+    {
 
-        return self::success(
-            data: null,
-            message: $message
-        );
+        return self::success(data: null, message: $message);
     }
 
     /**
      * HTTP 422 Validation Failed
      */
-    public static function validation(
-        mixed $errors,
-        string $message = 'Validation failed.'
-    ): JsonResponse {
+    public static function validation(mixed $errors, string $message = 'Validation failed.'): JsonResponse
+    {
 
-        return self::error(
-            message: $message,
-            status: 422,
-            errors: $errors
-        );
+        return self::error(message: $message, status: 422, errors: $errors);
     }
 
     /**
      * HTTP 401 Unauthorized
      */
-    public static function unauthorized(
-        string $message = 'Unauthorized.'
-    ): JsonResponse {
+    public static function unauthorized(string $message = 'Unauthorized.'): JsonResponse
+    {
 
-        return self::error(
-            message: $message,
-            status: 401
-        );
+        return self::error(message: $message, status: 401);
     }
 
     /**
      * HTTP 403 Forbidden
      */
-    public static function forbidden(
-        string $message = 'Forbidden.'
-    ): JsonResponse {
+    public static function forbidden(string $message = 'Forbidden.'): JsonResponse
+    {
 
-        return self::error(
-            message: $message,
-            status: 403
-        );
+        return self::error(message: $message, status: 403);
     }
 
     /**
      * HTTP 404 Resource Not Found
      */
-    public static function notFound(
-        string $message = 'Resource not found.'
-    ): JsonResponse {
+    public static function notFound(string $message = 'Resource not found.'): JsonResponse
+    {
 
-        return self::error(
-            message: $message,
-            status: 404
-        );
+        return self::error(message: $message, status: 404);
     }
 
     /**
      * HTTP 500 Internal Server Error
      */
-    public static function serverError(
-        string $message = 'Internal server error.'
-    ): JsonResponse {
+    public static function serverError(string $message = 'Internal server error.'): JsonResponse
+    {
 
-        return self::error(
-            message: $message,
-            status: 500
-        );
+        return self::error(message: $message, status: 500);
     }
 
     /**
@@ -245,15 +195,9 @@ class ApiResponse
      *
      * GET /api/households?page=1
      */
-    public static function paginated(
-        LengthAwarePaginator $paginator,
-        string $message = 'Data retrieved successfully.'
-    ): JsonResponse {
+    public static function paginated(LengthAwarePaginator $paginator, string $message = 'Data retrieved successfully.'): JsonResponse
+    {
 
-        return self::success(
-            data: $paginator->items(),
-            message: $message,
-            meta: Pagination::meta($paginator)
-        );
+        return self::success(data: $paginator->items(), message: $message, meta: Pagination::meta($paginator));
     }
 }

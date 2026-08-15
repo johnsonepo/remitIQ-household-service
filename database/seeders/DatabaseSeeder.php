@@ -21,19 +21,12 @@ class DatabaseSeeder extends Seeder
         // ------------------------------------------------------------
         $categoryNames = ['Food', 'Rent', 'School Fees', 'Medical', 'Utilities', 'Transport'];
 
-        $categories = collect($categoryNames)->map(
-            fn (string $name) => BudgetCategory::firstOrCreate(
-                ['name' => $name, 'user_id' => null],
-                ['is_default' => true, 'color' => fake()->hexColor()],
-            ),
-        );
+        $categories = collect($categoryNames)->map(fn (string $name) => BudgetCategory::firstOrCreate(['name' => $name, 'user_id' => null], ['is_default' => true, 'color' => fake()->hexColor()]));
 
         // ------------------------------------------------------------
         // Transfer providers
         // ------------------------------------------------------------
-        collect(['Western Union', 'MoneyGram', 'Wise', 'WorldRemit', 'Remitly'])->each(
-            fn (string $name) => TransferProvider::firstOrCreate(['name' => $name]),
-        );
+        collect(['Western Union', 'MoneyGram', 'Wise', 'WorldRemit', 'Remitly'])->each(fn (string $name) => TransferProvider::firstOrCreate(['name' => $name]));
 
         $providers = TransferProvider::all();
 

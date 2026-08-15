@@ -188,9 +188,7 @@ class AuthService
     public function changePassword(User $user, string $currentPassword, string $newPassword): void
     {
         if (! Hash::check($currentPassword, $user->password)) {
-            throw ApiException::badRequest(
-                'Current password is incorrect.'
-            );
+            throw ApiException::badRequest('Current password is incorrect.');
         }
 
         $user->update([
@@ -289,24 +287,19 @@ class AuthService
      */
     public function resetPassword(string $token, string $email, string $password): void
     {
-        $status = Password::broker()->reset(
-            [
-                'token' => $token,
-                'email' => $email,
+        $status = Password::broker()->reset([
+            'token' => $token,
+            'email' => $email,
+            'password' => $password,
+            'password_confirmation' => $password,
+        ], function (User $user, string $password): void {
+            $user->update([
                 'password' => $password,
-                'password_confirmation' => $password,
-            ],
-            function (User $user, string $password): void {
-                $user->update([
-                    'password' => $password,
-                ]);
-            }
-        );
+            ]);
+        });
 
         if ($status !== Password::PASSWORD_RESET) {
-            throw ApiException::badRequest(
-                'Unable to reset password.'
-            );
+            throw ApiException::badRequest('Unable to reset password.');
         }
     }
 }

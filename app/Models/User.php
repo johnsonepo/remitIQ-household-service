@@ -75,11 +75,9 @@ class User extends Authenticatable implements JWTSubject, MustVerifyEmail
 
     protected function avatarUrl(): Attribute
     {
-        return Attribute::make(
-            get: fn () => $this->avatar_path
+        return Attribute::make(get: fn () => $this->avatar_path
                 ? \Storage::disk('public')->url($this->avatar_path)
-                : null,
-        );
+                : null, );
     }
 
     public function ownedHouseholds(): HasMany

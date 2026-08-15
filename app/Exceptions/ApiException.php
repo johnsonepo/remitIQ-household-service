@@ -64,17 +64,9 @@ class ApiException extends Exception
      * @param  Throwable|null  $previous
      *                                    Previous exception for exception chaining.
      */
-    public function __construct(
-        int $statusCode,
-        string $message,
-        mixed $errors = null,
-        ?Throwable $previous = null,
-    ) {
-        parent::__construct(
-            message: $message,
-            code: $statusCode,
-            previous: $previous,
-        );
+    public function __construct(int $statusCode, string $message, mixed $errors = null, ?Throwable $previous = null)
+    {
+        parent::__construct(message: $message, code: $statusCode, previous: $previous);
 
         $this->statusCode = $statusCode;
         $this->errors = $errors;
@@ -105,86 +97,64 @@ class ApiException extends Exception
     /**
      * HTTP 400 Bad Request
      */
-    public static function badRequest(
-        string $message = 'Bad request.',
-        mixed $errors = null,
-    ): self {
+    public static function badRequest(string $message = 'Bad request.', mixed $errors = null): self
+    {
         return new self(400, $message, $errors);
     }
 
     /**
      * HTTP 401 Unauthorized
      */
-    public static function unauthorized(
-        string $message = 'Unauthorized.',
-        mixed $errors = null,
-    ): self {
+    public static function unauthorized(string $message = 'Unauthorized.', mixed $errors = null): self
+    {
         return new self(401, $message, $errors);
     }
 
     /**
      * HTTP 403 Forbidden
      */
-    public static function forbidden(
-        string $message = 'Forbidden.',
-        mixed $errors = null,
-    ): self {
+    public static function forbidden(string $message = 'Forbidden.', mixed $errors = null): self
+    {
         return new self(403, $message, $errors);
     }
 
     /**
      * HTTP 404 Not Found
      */
-    public static function notFound(
-        string $message = 'Resource not found.',
-        mixed $errors = null,
-    ): self {
+    public static function notFound(string $message = 'Resource not found.', mixed $errors = null): self
+    {
         return new self(404, $message, $errors);
     }
 
     /**
      * HTTP 409 Conflict
      */
-    public static function conflict(
-        string $message = 'Conflict.',
-        mixed $errors = null,
-    ): self {
+    public static function conflict(string $message = 'Conflict.', mixed $errors = null): self
+    {
         return new self(409, $message, $errors);
     }
 
     /**
      * HTTP 422 Validation Failed
      */
-    public static function validation(
-        string $message = 'Validation failed.',
-        mixed $errors = null,
-    ): self {
+    public static function validation(string $message = 'Validation failed.', mixed $errors = null): self
+    {
         return new self(422, $message, $errors);
     }
 
     /**
      * HTTP 429 Too Many Requests
      */
-    public static function tooManyRequests(
-        string $message = 'Too many requests.',
-        mixed $errors = null,
-    ): self {
+    public static function tooManyRequests(string $message = 'Too many requests.', mixed $errors = null): self
+    {
         return new self(429, $message, $errors);
     }
 
     /**
      * HTTP 500 Internal Server Error
      */
-    public static function internal(
-        string $message = 'Internal server error.',
-        mixed $errors = null,
-        ?Throwable $previous = null,
-    ): self {
-        return new self(
-            500,
-            $message,
-            $errors,
-            $previous,
-        );
+    public static function internal(string $message = 'Internal server error.', mixed $errors = null, ?Throwable $previous = null): self
+    {
+        return new self(500, $message, $errors, $previous);
     }
 }

@@ -1,23 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Household\HouseholdController;
+use App\Http\Controllers\Api\V1\Household\HouseholdInvitationController;
+use App\Http\Controllers\Api\V1\Household\HouseholdMemberController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /**
  * ============================================================================
- * API Version 1
- * ============================================================================
- *
- * All version 1 endpoints should be registered here.
- *
- * Route files are organized by concern.
- *
- * ============================================================================
- */
-
-/**
- * ============================================================================
- * API Version Health
+ * Public / Health Check Endpoints
  * ============================================================================
  */
 Route::get('/', function () {
@@ -28,17 +19,6 @@ Route::get('/', function () {
     ]);
 });
 
-/**
- * ============================================================================
- * Rate Limiter Debug
- * ============================================================================
- *
- * Development only.
- *
- * Remove before production.
- *
- * ============================================================================
- */
 Route::get('/debug', function (Request $request) {
     return response()->json([
         'ip' => $request->ip(),
@@ -54,3 +34,39 @@ Route::get('/debug', function (Request $request) {
  */
 
 require __DIR__.'/auth.php';
+
+/**
+ * ============================================================================
+ * Protected API Routes (Requires Authentication)
+ * ============================================================================
+ */
+Route::middleware('auth:api')->group(function () {
+
+    /**
+     * ============================================================================
+     * Households
+     * ============================================================================
+     */
+    Route::apiResource('households', HouseholdController::class);
+
+    /**
+     * ============================================================================
+     * Household Members
+     * ============================================================================
+     */
+    Route::apiResource('households.members', HouseholdMemberController::class)
+        ->except(['create', 'edit']);
+
+    /**
+     * ============================================================================
+     * Household Invitations
+     * ============================================================================
+     */
+    Route::apiResource('households.invitations', HouseholdInvitationController::class)
+        ->only(['index', 'store', 'show', 'destroy']);
+
+    Route::post('households/invitations/{token}/accept', [HouseholdInvitationController::class, 'accept'])
+        ->name('households.invitations.accept');
+
+    Route::post('households/invitations/{token}/decline', [HouseholdInvitationController::class, 'decline'])->name('households.invitations.decline');
+});
