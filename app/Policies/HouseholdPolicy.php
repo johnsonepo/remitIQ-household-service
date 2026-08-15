@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Household;
+use App\Models\HouseholdMember;
 use App\Models\User;
 
 class HouseholdPolicy
@@ -25,7 +26,10 @@ class HouseholdPolicy
 
     public function manageMembers(User $user, Household $household): bool
     {
-        $membership = $household->memberships()->where('user_id', $user->id)->first();
+        /** @var HouseholdMember|null $membership */
+        $membership = $household->memberships()
+            ->where('user_id', $user->id)
+            ->first();
 
         return $membership?->isAdmin() ?? false;
     }
