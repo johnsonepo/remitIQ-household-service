@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use PHPOpenSourceSaver\JWTAuth\JWTGuard;
 
 class AuthService
 {
@@ -78,7 +79,10 @@ class AuthService
      */
     public function login(array $credentials): ?array
     {
-        $token = Auth::guard('api')->attempt($credentials);
+        /** @var JWTGuard $guard */
+        $guard = Auth::guard('api');
+
+        $token = $guard->attempt($credentials);
 
         if (! $token) {
             return null;
@@ -119,10 +123,13 @@ class AuthService
      */
     public function refresh(): array
     {
-        $token = Auth::guard('api')->refresh();
+        /** @var JWTGuard $guard */
+        $guard = Auth::guard('api');
+
+        $token = $guard->refresh();
 
         /** @var User $user */
-        $user = Auth::guard('api')->user();
+        $user = $guard->user();
 
         return $this->tokenResponse($user, $token);
     }
@@ -280,7 +287,7 @@ class AuthService
      *
      * @throws ApiException When the token is invalid or expired.
      */
-    public function resetPassword(string $token, string $email, string $password): void 
+    public function resetPassword(string $token, string $email, string $password): void
     {
         $status = Password::broker()->reset(
             [
