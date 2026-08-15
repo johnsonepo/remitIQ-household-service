@@ -76,7 +76,6 @@ Phase 4 — Authentication Module
 □ Profile Management
 □ Email Verification
 □ Password Reset
-□ Authentication Tests
 ==================================================
 
 

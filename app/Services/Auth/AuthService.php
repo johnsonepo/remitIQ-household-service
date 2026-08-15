@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class AuthService
@@ -258,5 +259,47 @@ class AuthService
         }
 
         $user->sendEmailVerificationNotification();
+    }
+
+    /**
+     * Send a password reset link to the supplied email address.
+     *
+     * The actual reset token is generated and stored by Laravel's
+     * password broker. The notification is handled by Laravel's
+     * password reset infrastructure.
+     */
+    public function forgotPassword(string $email): void
+    {
+        Password::broker()->sendResetLink([
+            'email' => $email,
+        ]);
+    }
+
+    /**
+     * Reset a user's password using a valid password reset token.
+     *
+     * @throws ApiException When the token is invalid or expired.
+     */
+    public function resetPassword(string $token, string $email, string $password): void 
+    {
+        $status = Password::broker()->reset(
+            [
+                'token' => $token,
+                'email' => $email,
+                'password' => $password,
+                'password_confirmation' => $password,
+            ],
+            function (User $user, string $password): void {
+                $user->update([
+                    'password' => $password,
+                ]);
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            throw ApiException::badRequest(
+                'Unable to reset password.'
+            );
+        }
     }
 }

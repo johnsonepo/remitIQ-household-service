@@ -27,7 +27,6 @@ use Illuminate\Support\Facades\Route;
  *
  * ============================================================================
  */
-
 Route::prefix('auth')->group(function () {
 
     /*
@@ -41,6 +40,12 @@ Route::prefix('auth')->group(function () {
 
     Route::post('/login', [AuthController::class, 'login'])
         ->name('auth.login');
+
+    Route::post('/password/forgot', [AuthController::class, 'forgotPassword'])
+        ->name('auth.password.forgot');
+
+    Route::post('/password/reset', [AuthController::class, 'resetPassword'])
+        ->name('auth.password.reset');
 
     /*
     |--------------------------------------------------------------------------

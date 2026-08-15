@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\V1\Auth;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Api\BaseController;
 use App\Http\Requests\Api\Auth\ChangePasswordRequest;
+use App\Http\Requests\Api\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Api\Auth\LoginRequest;
 use App\Http\Requests\Api\Auth\RegisterRequest;
+use App\Http\Requests\Api\Auth\ResetPasswordRequest;
 use App\Http\Requests\Api\Auth\UpdateProfileRequest;
 use App\Http\Requests\Api\Auth\VerifyEmailRequest;
 use App\Http\Resources\Api\V1\UserResource;
@@ -220,5 +222,35 @@ class AuthController extends BaseController
         $this->authService->resendVerificationEmail($request->user());
 
         return $this->success(message: 'Verification email sent.');
+    }
+
+    /**
+     * POST /api/v1/auth/password/forgot
+     */
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
+    {
+        $this->authService->forgotPassword(
+            $request->validated('email')
+        );
+
+        return $this->success(
+            message: 'If an account exists for that email, a password reset link has been sent.'
+        );
+    }
+
+    /**
+     * POST /api/v1/auth/password/reset
+     */
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $this->authService->resetPassword(
+            $request->validated('token'),
+            $request->validated('email'),
+            $request->validated('password'),
+        );
+
+        return $this->success(
+            message: 'Password reset successfully.'
+        );
     }
 }
