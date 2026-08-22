@@ -4,6 +4,8 @@ namespace App\Services\Auth;
 
 use App\Exceptions\ApiException;
 use App\Models\User;
+use App\Services\Notification\NotificationEventBuilder;
+use App\Services\Notification\NotificationEventEmitter;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -13,23 +15,10 @@ use PHPOpenSourceSaver\JWTAuth\JWTGuard;
 
 class AuthService
 {
+    public function __construct(private readonly NotificationEventBuilder $notificationEventBuilder, private readonly NotificationEventEmitter $notificationEventEmitter) {}
+
     /**
      * Register a new user account and issue an authentication token.
-     *
-     * The service is responsible for the application-level authentication
-     * workflow:
-     *
-     * 1. Create the user from the validated registration data.
-     * 2. Generate a JWT for the newly-created user.
-     * 3. Return the user and token information in the standard
-     *    authentication response structure.
-     *
-     * Password hashing is intentionally not performed here. The User model
-     * is responsible for hashing the password through its configured
-     * 'hashed' cast when the model is persisted.
-     *
-     * The controller remains responsible for request validation and
-     * transforming the returned User model into the API resource format.
      *
      * @param  array<string, mixed>  $data
      * @return array{
@@ -52,6 +41,14 @@ class AuthService
 
         $user->sendEmailVerificationNotification();
 
+        $event = $this->notificationEventBuilder->build(eventType: 'USER_REGISTERED', userId: (string) $user->id, data: [
+            'userId' => $user->id,
+            'email' => $user->email,
+            'name' => $user->name,
+        ], );
+
+        $this->notificationEventEmitter->emit($event);
+
         $token = JWTAuth::fromUser($user);
 
         return $this->tokenResponse($user, $token);
@@ -59,15 +56,6 @@ class AuthService
 
     /**
      * Authenticate a user using the supplied credentials.
-     *
-     * The JWT authentication guard verifies the credentials and, when they
-     * are valid, issues a signed JWT.
-     *
-     * A null result indicates that authentication failed. The controller
-     * converts this outcome into the appropriate HTTP 401 response.
-     *
-     * Keeping the failed-authentication decision outside this service avoids
-     * coupling the service to HTTP-specific response handling.
      *
      * @param  array<string, mixed>  $credentials
      * @return array{
@@ -89,13 +77,20 @@ class AuthService
         }
 
         /** @var User $user */
-        $user = Auth::guard('api')->user();
+        $user = $guard->user();
 
         if (! $user->is_active) {
-            Auth::guard('api')->logout(); // invalidate the token we just issued
+            Auth::guard('api')->logout();
 
             return null;
         }
+
+        $event = $this->notificationEventBuilder->build(eventType: 'USER_LOGGED_IN', userId: (string) $user->id, data: [
+            'userId' => $user->id,
+            'email' => $user->email,
+        ], );
+
+        $this->notificationEventEmitter->emit($event);
 
         return $this->tokenResponse($user, $token);
     }
@@ -103,59 +98,59 @@ class AuthService
     /**
      * Refresh the currently authenticated JWT.
      *
-     * The JWT package validates the current token and replaces it with a
-     * newly-issued token. The refreshed token receives a new expiration
-     * period based on the configured JWT TTL.
-     *
-     * This method expects the API authentication middleware to have already
-     * established the authenticated context before it is called.
-     *
-     * Token refresh failures are intentionally allowed to propagate to the
-     * controller, where they can be translated into the appropriate API
-     * response.
-     *
      * @return array{
      *     user: User,
      *     token: string,
      *     token_type: string,
      *     expires_in: int
      * }
+     *
+     * @throws ApiException If the authenticated user is inactive.
      */
     public function refresh(): array
     {
         /** @var JWTGuard $guard */
         $guard = Auth::guard('api');
 
-        $token = $guard->refresh();
-
         /** @var User $user */
         $user = $guard->user();
 
-        return $this->tokenResponse($user, $token);
+        if (! $user->is_active) {
+            $guard->logout();
+
+            throw ApiException::unauthorized('Unable to refresh token.');
+        }
+
+        $token = $guard->refresh();
+
+        /** @var User $refreshedUser */
+        $refreshedUser = $guard->user();
+
+        return $this->tokenResponse($refreshedUser, $token);
     }
 
     /**
-     * Logout the currently authenticated user by invalidating
-     * the JWT presented with the current request.
-     *
-     * JWT authentication is stateless, so logout does not destroy
-     * a server-side session. Instead, the current token is added to
-     * the JWT blacklist and can no longer be used for authentication.
-     *
-     * The JWT package must have blacklist support enabled for this
-     * invalidation mechanism to work correctly.
+     * Logout the currently authenticated user.
      */
     public function logout(): void
     {
+        /** @var User|null $user */
+        $user = Auth::guard('api')->user();
+
         Auth::guard('api')->logout();
+
+        if ($user !== null) {
+            $event = $this->notificationEventBuilder->build(eventType: 'USER_LOGGED_OUT', userId: (string) $user->id, data: [
+                'userId' => $user->id,
+                'email' => $user->email,
+            ], );
+
+            $this->notificationEventEmitter->emit($event);
+        }
     }
 
     /**
      * Update the authenticated user's profile fields.
-     *
-     * Only the fields present in $data are applied — this mirrors
-     * PATCH semantics, so a client can send just the fields it wants
-     * to change without needing to resend the entire profile.
      *
      * @param  array<string, mixed>  $data
      */
@@ -169,24 +164,16 @@ class AuthService
     /**
      * Change the authenticated user's password.
      *
-     * The current password must be verified before the new password is
-     * persisted. The User model is responsible for hashing the new password
-     * through its configured 'hashed' cast.
-     *
-     * After a successful password change, the JWT used for the current
-     * request is invalidated. This forces the client that performed the
-     * password change to authenticate again.
-     *
-     * Note:
-     * Invalidating the current JWT does not automatically revoke other JWTs
-     * that may have previously been issued to the same user. Global token
-     * revocation can be introduced later if the authentication architecture
-     * requires it.
-     *
      * @throws ApiException When the current password is incorrect.
      */
     public function changePassword(User $user, string $currentPassword, string $newPassword): void
     {
+        if (! $user->is_active) {
+            Auth::guard('api')->logout();
+
+            throw ApiException::unauthorized('Unable to change password.');
+        }
+
         if (! Hash::check($currentPassword, $user->password)) {
             throw ApiException::badRequest('Current password is incorrect.');
         }
@@ -196,20 +183,17 @@ class AuthService
         ]);
 
         Auth::guard('api')->logout();
+
+        $event = $this->notificationEventBuilder->build(eventType: 'PASSWORD_CHANGED', userId: (string) $user->id, data: [
+            'userId' => $user->id,
+            'email' => $user->email,
+        ], );
+
+        $this->notificationEventEmitter->emit($event);
     }
 
     /**
      * Build the standard authentication token payload.
-     *
-     * All authentication operations that issue a JWT use this method so
-     * registration, login, and refresh return the same response structure.
-     *
-     * Keeping this normalization in one place prevents duplicated JWT
-     * metadata logic across the individual authentication methods.
-     *
-     * The expiration value is returned in seconds because this is generally
-     * more convenient for API clients than the package's internal TTL value,
-     * which is expressed in minutes.
      *
      * @return array{
      *     user: User,
@@ -230,8 +214,7 @@ class AuthService
 
     /**
      * Verify a user's email using the id/hash pair from the signed
-     * verification link. The signature/expiry itself is validated by
-     * Laravel's 'signed' route middleware before this method runs.
+     * verification link.
      *
      * @throws ApiException if the hash doesn't match, or the email is
      *                      already verified.
@@ -249,7 +232,15 @@ class AuthService
         }
 
         $user->markEmailAsVerified();
+
         event(new Verified($user));
+
+        $event = $this->notificationEventBuilder->build(eventType: 'EMAIL_VERIFIED', userId: (string) $user->id, data: [
+            'userId' => $user->id,
+            'email' => $user->email,
+        ], );
+
+        $this->notificationEventEmitter->emit($event);
     }
 
     /**
@@ -259,19 +250,26 @@ class AuthService
      */
     public function resendVerificationEmail(User $user): void
     {
+        if (! $user->is_active) {
+            throw ApiException::unauthorized('Unable to resend verification email.');
+        }
+
         if ($user->hasVerifiedEmail()) {
             throw ApiException::conflict('Email already verified.');
         }
 
         $user->sendEmailVerificationNotification();
+
+        $event = $this->notificationEventBuilder->build(eventType: 'EMAIL_VERIFICATION_RESENT', userId: (string) $user->id, data: [
+            'userId' => $user->id,
+            'email' => $user->email,
+        ], );
+
+        $this->notificationEventEmitter->emit($event);
     }
 
     /**
      * Send a password reset link to the supplied email address.
-     *
-     * The actual reset token is generated and stored by Laravel's
-     * password broker. The notification is handled by Laravel's
-     * password reset infrastructure.
      */
     public function forgotPassword(string $email): void
     {
@@ -287,19 +285,32 @@ class AuthService
      */
     public function resetPassword(string $token, string $email, string $password): void
     {
+        $resetUser = null;
+
         $status = Password::broker()->reset([
             'token' => $token,
             'email' => $email,
             'password' => $password,
             'password_confirmation' => $password,
-        ], function (User $user, string $password): void {
+        ], function (User $user, string $password) use (&$resetUser): void {
             $user->update([
                 'password' => $password,
             ]);
+
+            $resetUser = $user;
         });
 
         if ($status !== Password::PASSWORD_RESET) {
             throw ApiException::badRequest('Unable to reset password.');
+        }
+
+        if ($resetUser !== null) {
+            $event = $this->notificationEventBuilder->build(eventType: 'PASSWORD_RESET', userId: (string) $resetUser->id, data: [
+                'userId' => $resetUser->id,
+                'email' => $resetUser->email,
+            ], );
+
+            $this->notificationEventEmitter->emit($event);
         }
     }
 }

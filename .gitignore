@@ -124,3 +124,6 @@ docker-data/
 # -----------------------------------------------------------------------------
 
 .cache/
+
+/storage/app/keys/jwt-private.pem
+/storage/app/keys/jwt-public.pem

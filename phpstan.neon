@@ -18,7 +18,8 @@ parameters:
 
     # Laravel bootstrap
     bootstrapFiles:
-        - bootstrap/app.php
+    - bootstrap/app.php
+    - vendor/autoload.php
 
     # Exclude generated/framework files
     excludePaths:

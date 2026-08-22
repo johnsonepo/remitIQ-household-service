@@ -168,19 +168,6 @@ Validation
 ✅ Invitation Action Validation
 
 
-Testing
--------
-
-□ Household CRUD Tests
-□ Household Authorization Tests
-□ Member Tests
-□ Member Authorization Tests
-□ Invitation Tests
-□ Invitation Expiration Tests
-□ Role Tests
-□ Ownership Protection Tests
-
-
 Code Quality
 ------------
 
@@ -192,69 +179,249 @@ Code Quality
 Phase 6 — Budget Module
 ==================================================
 
-□ Budget Categories
-□ Monthly Budgets
-□ Budget CRUD
-□ Expense Tracking
-□ Budget Calculations
-□ Budget Comparison
-□ Budget History
+Budget Categories
+-----------------
+
+✅ Budget Categories
+✅ Default/System Categories
+✅ Custom Category Support
+✅ Category Validation
+✅ Category Authorization
+
+
+Monthly Budgets
+---------------
+
+✅ Monthly Budgets
+✅ Budget Month Handling
+✅ Budget Currency Handling
+✅ Household Budget Association
+✅ User Budget Ownership
+
+
+Budget CRUD
+-----------
+
+✅ Budget Model
+✅ Budget Repository
+✅ Budget Service
+✅ Budget Controller
+✅ Create Budget
+✅ View Budget
+✅ Update Budget
+✅ Delete Budget
+
+
+Expense Tracking
+----------------
+
+✅ Budget Item Model
+✅ Budget Item Repository
+✅ Budget Item Service
+✅ Budget Item Controller
+✅ Create Budget Item
+✅ List Budget Items
+✅ View Budget Item
+✅ Update Budget Item
+✅ Delete Budget Item
+✅ Category Allocation
+✅ Planned Amount Tracking
+✅ Actual Amount Tracking
+✅ Notes
+✅ Duplicate Category Protection
+
+
+Budget Calculations
+-------------------
+
+✅ Planned Amount
+✅ Actual Amount
+✅ Remaining Amount
+✅ Budget Item Calculations
+
+
+Budget History
+--------------
+
+✅ Monthly Budget History
+✅ Historical Budget Retrieval
+
+
+Budget Comparison
+-----------------
+
+✅ Budget Comparison
+✅ Planned vs Actual Comparison
+✅ Month-to-Month Comparison
+✅ Category-Level Comparison
+✅ Planned Amount Change Tracking
+✅ Actual Amount Change Tracking
+✅ Remaining Amount Change Tracking
+
+
+API Verification
+----------------
+
+✅ Budget Routes
+✅ Budget Item Routes
+✅ JWT Authentication
+✅ Budget Ownership Verification
+✅ CRUD Endpoint Verification
+✅ Duplicate Category Verification
+✅ Budget History Verification
+✅ Budget Comparison Verification
+✅ Planned vs Actual Verification
+✅ Month-to-Month Comparison Verification
+
+
+Code Quality
+------------
+
+✅ PHPStan
 
 
 ==================================================
 Phase 7 — Remittance Module
 ==================================================
 
-□ Remittance Records
-□ Transfer Providers
-□ Amount Sent Tracking
-□ Amount Received Tracking
-□ Exchange Rate Snapshot
-□ Remittance History
-□ Remittance Analytics
+Transfer Providers
+------------------
+
+✅ Transfer Provider Model
+✅ Transfer Provider Migration
+✅ Transfer Provider Factory
+✅ Transfer Provider Seeder
+✅ Provider Name
+✅ Provider Logo URL
+✅ Provider Active/Inactive Status
+✅ Remittance → Provider Relationship
+
+
+Remittance Foundation
+---------------------
+
+✅ Remittance Model
+✅ Remittance Migration
+✅ Remittance Factory
+✅ Remittance Policy
+✅ Remittance → Household Relationship
+✅ Remittance → User Relationship
+✅ Remittance → Transfer Provider Relationship
+✅ Remittance Attachments
+✅ Amount Sent Fields
+✅ Amount Received Fields
+✅ Exchange Rate Snapshot
+✅ Rate Source
+✅ Sent Date
+✅ Notes
+
+
+Remittance API
+--------------
+
+✅ Remittance Repository
+✅ Remittance Service
+✅ Remittance Controller
+✅ Create Remittance
+✅ List Remittances
+✅ View Remittance
+✅ Update Remittance
+✅ Delete Remittance
+✅ Request Validation
+✅ API Routes
+✅ Authorization Verification
+
+
+Remittance History
+------------------
+
+✅ Remittance History
+✅ History Filtering
+✅ Date Filtering
+✅ Provider Filtering
+✅ Household Filtering
+
+
+Remittance Analytics
+--------------------
+
+✅ Total Sent
+✅ Total Received
+✅ Transfer Count
+✅ Average Exchange Rate
+✅ Monthly Remittance Trends
+✅ Exchange Rate Impact
 
 
 ==================================================
-Phase 8 — Market Service Integration
+Phase 8 — Notification Integration
 ==================================================
 
-□ JWT Validation From Household Service
-□ Market Service API Client
-□ Exchange Rate Consumption
-□ Rate History Consumption
-□ Alert Event Consumption
-□ API Communication Layer
-□ Service Timeout Handling
-□ Retry Strategy
+Notification Event Contract
+----------------------------
+
+✅ Notification Event Contract
+✅ Event ID Generation
+✅ Event Timestamp
+✅ Event Type
+✅ Event Source
+✅ Event Payload Structure
+
+
+Authentication Events
+---------------------
+
+✅ USER_REGISTERED
+✅ USER_LOGGED_IN
+✅ USER_LOGGED_OUT
+✅ EMAIL_VERIFIED
+✅ EMAIL_VERIFICATION_RESENT
+✅ PASSWORD_CHANGED
+✅ PASSWORD_RESET
+
+
+Household Events
+----------------
+
+✅ HOUSEHOLD_INVITATION_CREATED
+✅ HOUSEHOLD_INVITATION_ACCEPTED
+✅ HOUSEHOLD_INVITATION_DECLINED
+✅ HOUSEHOLD_INVITATION_CANCELLED
+✅ HOUSEHOLD_INVITATION_EXPIRED
+✅ HOUSEHOLD_MEMBER_ADDED
+✅ HOUSEHOLD_MEMBER_REMOVED
+✅ HOUSEHOLD_MEMBER_ROLE_UPDATED
+
+
+Budget Events
+-------------
+
+⏭️ Budget notifications intentionally not implemented
+   unless a concrete notification requirement is identified.
+
+
+Remittance Events
+-----------------
+
+✅ REMITTANCE_CREATED
+✅ REMITTANCE_UPDATED
+✅ REMITTANCE_DELETED
+
+
+Notification Event Infrastructure
+---------------------------------
+
+✅ NotificationEvent
+✅ NotificationEventBuilder
+✅ NotificationEventEmitter
+✅ NotificationServiceClient
 
 
 ==================================================
-Phase 9 — Notification Module
+Phase 9 — Testing
 ==================================================
 
-□ Notification System
-□ Email Notifications
-□ Push Notification Preparation
-□ Alert Delivery
-□ Notification Preferences
-□ Notification History
-
-
-==================================================
-Phase 10 — Analytics Module
-==================================================
-
-□ Monthly Reports
-□ Spending Analysis
-□ Remittance Trends
-□ Household Financial Insights
-□ Budget Performance
-□ Exchange Rate Impact Analysis
-
-
-==================================================
-Phase 11 — Testing
-==================================================
+⏸️ Deferred
 
 □ Unit Tests
 □ Feature Tests
@@ -263,10 +430,14 @@ Phase 11 — Testing
 □ API Tests
 □ Authentication Tests
 □ Database Tests
+□ Service Integration Tests
+□ Notification Event Tests
+□ Notification Client Tests
+□ Integration Tests
 
 
 ==================================================
-Phase 12 — Production
+Phase 10 — Production
 ==================================================
 
 □ Production Docker Image

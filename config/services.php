@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'notification' => [
+        'url' => env('NOTIFICATION_SERVICE_URL'),
+        'api_key' => env('NOTIFICATION_SERVICE_API_KEY'),
+        'timeout' => (int) env('NOTIFICATION_SERVICE_TIMEOUT', 5),
+    ],
+
 ];

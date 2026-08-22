@@ -12,6 +12,7 @@ use App\Http\Requests\Api\Auth\ResetPasswordRequest;
 use App\Http\Requests\Api\Auth\UpdateProfileRequest;
 use App\Http\Requests\Api\Auth\VerifyEmailRequest;
 use App\Http\Resources\Api\V1\UserResource;
+use App\Models\User;
 use App\Services\Auth\AuthService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,21 +20,10 @@ use Throwable;
 
 class AuthController extends BaseController
 {
-    /**
-     * Create the authentication controller.
-     *
-     * AuthService contains the authentication business logic, allowing this
-     * controller to remain focused on HTTP concerns: receiving validated
-     * requests, invoking the appropriate service operation, transforming
-     * resources, and returning API responses.
-     */
     public function __construct(private readonly AuthService $authService) {}
 
     /**
      * POST /api/v1/auth/register
-     *
-     * Validate registration data, create the account, issue a JWT, and
-     * return the newly-created user with its authentication token.
      */
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -44,12 +34,6 @@ class AuthController extends BaseController
 
     /**
      * POST /api/v1/auth/login
-     *
-     * Validate the supplied credentials and authenticate the user through
-     * the API JWT guard.
-     *
-     * Invalid credentials are converted into a 401 Unauthorized response
-     * rather than exposing authentication implementation details.
      */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -64,13 +48,6 @@ class AuthController extends BaseController
 
     /**
      * POST /api/v1/auth/refresh
-     *
-     * Validate the current JWT through the authentication service and issue
-     * a replacement access token.
-     *
-     * Token-related exceptions are deliberately translated here into a
-     * generic 401 response so internal JWT implementation details are not
-     * exposed to API clients.
      */
     public function refresh(): JsonResponse
     {
@@ -85,26 +62,16 @@ class AuthController extends BaseController
 
     /**
      * POST /api/v1/auth/logout
-     *
-     * Invalidates the currently authenticated JWT.
      */
     public function logout(): JsonResponse
     {
         $this->authService->logout();
 
-        return $this->success(message: 'Logout successful.');
+        return $this->success(data: null, message: 'Logout successful.');
     }
 
     /**
      * GET /api/v1/auth/me
-     *
-     * Return the profile of the currently authenticated user.
-     *
-     * Authentication middleware guarantees that a valid JWT has already
-     * been resolved before this action is reached.
-     *
-     * UserResource is used to keep the public API representation separate
-     * from the internal Eloquent User model.
      */
     public function me(Request $request): JsonResponse
     {
@@ -113,12 +80,6 @@ class AuthController extends BaseController
 
     /**
      * PATCH /api/v1/auth/profile
-     *
-     * Update only the profile fields supplied by the client.
-     *
-     * UpdateProfileRequest uses "sometimes" validation rules, so this
-     * endpoint follows PATCH semantics: clients only need to submit the
-     * fields they want to change.
      */
     public function updateProfile(UpdateProfileRequest $request): JsonResponse
     {
@@ -129,26 +90,24 @@ class AuthController extends BaseController
 
     /**
      * PUT /api/v1/auth/profile/password
-     *
-     * Change the authenticated user's password.
-     *
-     * The service verifies the current password, updates the new password,
-     * and invalidates the JWT used for this request. The client must
-     * authenticate again after a successful password change.
      */
     public function changePassword(ChangePasswordRequest $request): JsonResponse
     {
         $this->authService->changePassword($request->user(), $request->validated('current_password'), $request->validated('password'));
 
-        return $this->success(message: 'Password changed successfully. Please log in again.');
+        return $this->success(data: null, message: 'Password changed successfully. Please log in again.');
     }
 
     /**
      * Transform the service-level authentication result into the public
      * HTTP API representation.
      *
-     * User models are wrapped in UserResource so the internal Eloquent
-     * representation is never exposed directly by the API.
+     * @param array{
+     *     user: User,
+     *     token: string,
+     *     token_type: string,
+     *     expires_in: int
+     * } $result
      */
     private function transformAuthResult(array $result): array
     {
@@ -162,15 +121,12 @@ class AuthController extends BaseController
 
     /**
      * POST /api/v1/auth/email/verify
-     *
-     * Body: { "id": 9, "hash": "..." } — sent by the frontend after
-     * parsing the signed link from the verification email.
      */
     public function verifyEmail(VerifyEmailRequest $request): JsonResponse
     {
         $this->authService->verifyEmail($request->validated('id'), $request->validated('hash'));
 
-        return $this->success(message: 'Email verified successfully.');
+        return $this->success(data: null, message: 'Email verified successfully.');
     }
 
     /**
@@ -180,7 +136,7 @@ class AuthController extends BaseController
     {
         $this->authService->resendVerificationEmail($request->user());
 
-        return $this->success(message: 'Verification email sent.');
+        return $this->success(data: null, message: 'Verification email sent.');
     }
 
     /**
@@ -190,7 +146,7 @@ class AuthController extends BaseController
     {
         $this->authService->forgotPassword($request->validated('email'));
 
-        return $this->success(message: 'If an account exists for that email, a password reset link has been sent.');
+        return $this->success(data: null, message: 'If an account exists for that email, a password reset link has been sent.');
     }
 
     /**
@@ -200,6 +156,6 @@ class AuthController extends BaseController
     {
         $this->authService->resetPassword($request->validated('token'), $request->validated('email'), $request->validated('password'));
 
-        return $this->success(message: 'Password reset successfully.');
+        return $this->success(data: null, message: 'Password reset successfully.');
     }
 }

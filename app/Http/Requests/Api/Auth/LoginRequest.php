@@ -13,4 +13,13 @@ class LoginRequest extends BaseFormRequest
             'password' => ['required', 'string'],
         ];
     }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('email')) {
+            $this->merge([
+                'email' => strtolower(trim($this->input('email'))),
+            ]);
+        }
+    }
 }

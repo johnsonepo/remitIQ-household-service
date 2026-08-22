@@ -33,7 +33,7 @@ class Remittance extends Model
             'amount_sent' => 'decimal:2',
             'amount_received' => 'decimal:2',
             'exchange_rate' => 'decimal:10',
-            'sent_at' => 'date',
+            'sent_at' => 'datetime',
         ];
     }
 

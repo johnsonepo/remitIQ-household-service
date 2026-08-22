@@ -2,17 +2,20 @@
 
 namespace App\Services\Household;
 
+use App\Exceptions\ApiException;
 use App\Models\Household;
 use App\Models\HouseholdMember;
 use App\Models\User;
+use App\Services\Notification\NotificationEventBuilder;
+use App\Services\Notification\NotificationEventEmitter;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
-use App\Exceptions\ApiException;
-
 
 class HouseholdMemberService
 {
+    public function __construct(private readonly NotificationEventBuilder $notificationEventBuilder, private readonly NotificationEventEmitter $notificationEventEmitter) {}
+
     /**
      * Get all members of a household.
      *
@@ -76,7 +79,18 @@ class HouseholdMemberService
                 'joined_at' => now(),
             ]);
 
-            return $member->load('user');
+            $member = $member->load('user', 'household');
+
+            $event = $this->notificationEventBuilder->build(eventType: 'HOUSEHOLD_MEMBER_ADDED', userId: (string) $user->id, data: [
+                'memberId' => $member->id,
+                'householdId' => $household->id,
+                'userId' => $user->id,
+                'role' => $member->role,
+            ], );
+
+            $this->notificationEventEmitter->emit($event);
+
+            return $member;
         });
     }
 
@@ -101,7 +115,18 @@ class HouseholdMemberService
             'role' => $role,
         ]);
 
-        return $member->refresh()->load('user');
+        $member = $member->refresh()->load('user', 'household');
+
+        $event = $this->notificationEventBuilder->build(eventType: 'HOUSEHOLD_MEMBER_ROLE_UPDATED', userId: (string) $member->user_id, data: [
+            'memberId' => $member->id,
+            'householdId' => $member->household_id,
+            'userId' => $member->user_id,
+            'role' => $member->role,
+        ], );
+
+        $this->notificationEventEmitter->emit($event);
+
+        return $member;
     }
 
     /**
@@ -113,6 +138,22 @@ class HouseholdMemberService
             throw ApiException::badRequest('The household owner cannot be removed.');
         }
 
-        return (bool) $member->delete();
+        $memberId = $member->id;
+        $householdId = $member->household_id;
+        $userId = $member->user_id;
+
+        $deleted = (bool) $member->delete();
+
+        if ($deleted) {
+            $event = $this->notificationEventBuilder->build(eventType: 'HOUSEHOLD_MEMBER_REMOVED', userId: (string) $userId, data: [
+                'memberId' => $memberId,
+                'householdId' => $householdId,
+                'userId' => $userId,
+            ], );
+
+            $this->notificationEventEmitter->emit($event);
+        }
+
+        return $deleted;
     }
 }

@@ -1,0 +1,239 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
+use Tests\TestCase;
+
+class AuthTokenTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private function tokenFor(User $user): string
+    {
+        return JWTAuth::fromUser($user);
+    }
+
+    private function authHeaders(string $token): array
+    {
+        return [
+            'Authorization' => 'Bearer '.$token,
+            'Accept' => 'application/json',
+        ];
+    }
+
+    public function test_refresh_requires_authentication(): void
+    {
+        $response = $this->postJson('/api/v1/auth/refresh');
+
+        $response->assertUnauthorized();
+    }
+
+    public function test_authenticated_user_can_refresh_token(): void
+    {
+        $user = User::factory()->create();
+        $token = $this->tokenFor($user);
+
+        $response = $this
+            ->withHeaders($this->authHeaders($token))
+            ->postJson('/api/v1/auth/refresh');
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Token refreshed successfully.')
+            ->assertJsonPath('data.token_type', 'bearer');
+
+        $response->assertJsonStructure([
+            'success',
+            'message',
+            'data' => [
+                'user' => [
+                    'id',
+                    'name',
+                    'username',
+                    'email',
+                    'country_code',
+                    'phone',
+                    'bio',
+                    'created_at',
+                    'updated_at',
+                ],
+                'token',
+                'token_type',
+                'expires_in',
+            ],
+            'meta',
+            'timestamp',
+        ]);
+    }
+
+    public function test_refresh_returns_positive_expiration_time(): void
+    {
+        $user = User::factory()->create();
+        $token = $this->tokenFor($user);
+
+        $response = $this
+            ->withHeaders($this->authHeaders($token))
+            ->postJson('/api/v1/auth/refresh');
+
+        $response->assertOk();
+
+        $this->assertGreaterThan(0, $response->json('data.expires_in'));
+    }
+
+    public function test_refreshed_token_authenticates_as_same_user(): void
+    {
+        $user = User::factory()->create();
+        $token = $this->tokenFor($user);
+
+        $refreshResponse = $this
+            ->withHeaders($this->authHeaders($token))
+            ->postJson('/api/v1/auth/refresh');
+
+        $refreshResponse->assertOk();
+
+        $newToken = $refreshResponse->json('data.token');
+
+        $this->assertIsString($newToken);
+        $this->assertNotSame($token, $newToken);
+
+        $meResponse = $this
+            ->withHeaders($this->authHeaders($newToken))
+            ->getJson('/api/v1/auth/me');
+
+        $meResponse
+            ->assertOk()
+            ->assertJsonPath('data.id', $user->id)
+            ->assertJsonPath('data.email', $user->email)
+            ->assertJsonPath('data.name', $user->name);
+    }
+
+    public function test_refresh_does_not_return_sensitive_user_fields(): void
+    {
+        $user = User::factory()->create([
+            'password' => Hash::make('Password123!'),
+            'remember_token' => 'secret-remember-token',
+            'is_active' => true,
+        ]);
+
+        $token = $this->tokenFor($user);
+
+        $response = $this
+            ->withHeaders($this->authHeaders($token))
+            ->postJson('/api/v1/auth/refresh');
+
+        $response
+            ->assertOk()
+            ->assertJsonMissingPath('data.password')
+            ->assertJsonMissingPath('data.remember_token')
+            ->assertJsonMissingPath('data.is_active');
+    }
+
+    public function test_malformed_bearer_token_cannot_refresh(): void
+    {
+        $response = $this
+            ->withHeaders($this->authHeaders('not-a-valid-jwt'))
+            ->postJson('/api/v1/auth/refresh');
+
+        $response->assertUnauthorized();
+    }
+
+    public function test_invalid_bearer_token_cannot_refresh(): void
+    {
+        $response = $this
+            ->withHeaders($this->authHeaders('eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.invalid.token'))
+            ->postJson('/api/v1/auth/refresh');
+
+        $response->assertUnauthorized();
+    }
+
+    public function test_inactive_user_cannot_refresh_token(): void
+    {
+        $user = User::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $token = $this->tokenFor($user);
+
+        $user->update([
+            'is_active' => false,
+        ]);
+
+        $response = $this
+            ->withHeaders($this->authHeaders($token))
+            ->postJson('/api/v1/auth/refresh');
+
+        $response->assertUnauthorized();
+    }
+
+    public function test_refresh_cannot_use_another_users_token_to_impersonate_user(): void
+    {
+        $userA = User::factory()->create();
+        $userB = User::factory()->create();
+
+        $tokenA = $this->tokenFor($userA);
+
+        $response = $this
+            ->withHeaders($this->authHeaders($tokenA))
+            ->postJson('/api/v1/auth/refresh');
+
+        $response->assertOk();
+
+        $newToken = $response->json('data.token');
+
+        $meResponse = $this
+            ->withHeaders($this->authHeaders($newToken))
+            ->getJson('/api/v1/auth/me');
+
+        $meResponse
+            ->assertOk()
+            ->assertJsonPath('data.id', $userA->id)
+            ->assertJsonPath('data.email', $userA->email);
+
+        $meResponse->assertJsonMissing([
+            'email' => $userB->email,
+        ]);
+    }
+
+    public function test_refresh_returns_a_new_token(): void
+    {
+        $user = User::factory()->create();
+        $originalToken = $this->tokenFor($user);
+
+        $response = $this
+            ->withHeaders($this->authHeaders($originalToken))
+            ->postJson('/api/v1/auth/refresh');
+
+        $response->assertOk();
+
+        $newToken = $response->json('data.token');
+
+        $this->assertIsString($newToken);
+        $this->assertNotEmpty($newToken);
+        $this->assertNotSame($originalToken, $newToken);
+    }
+
+    public function test_refresh_response_does_not_expose_internal_user_state(): void
+    {
+        $user = User::factory()->create([
+            'is_active' => true,
+        ]);
+
+        $token = $this->tokenFor($user);
+
+        $response = $this
+            ->withHeaders($this->authHeaders($token))
+            ->postJson('/api/v1/auth/refresh');
+
+        $response
+            ->assertOk()
+            ->assertJsonMissingPath('data.password')
+            ->assertJsonMissingPath('data.remember_token')
+            ->assertJsonMissingPath('data.email_verified_at')
+            ->assertJsonMissingPath('data.is_active');
+    }
+}

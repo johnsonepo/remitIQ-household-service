@@ -8,6 +8,9 @@ use App\Models\HouseholdInvitation;
 use App\Models\HouseholdMember;
 use App\Models\User;
 use App\Repositories\HouseholdInvitationRepository;
+use App\Services\Notification\NotificationEventBuilder;
+use App\Services\Notification\NotificationEventEmitter;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +18,7 @@ use Illuminate\Support\Str;
 
 class HouseholdInvitationService
 {
-    public function __construct(private readonly HouseholdInvitationRepository $repository) {}
+    public function __construct(private readonly HouseholdInvitationRepository $repository, private readonly NotificationEventBuilder $notificationEventBuilder, private readonly NotificationEventEmitter $notificationEventEmitter) {}
 
     /**
      * Get all invitations for a household.
@@ -69,7 +72,20 @@ class HouseholdInvitationService
                 'expires_at' => now()->addDays(7),
             ]);
 
-            return $invitation->load('inviter');
+            $invitation = $invitation->load('inviter', 'household');
+
+            $event = $this->notificationEventBuilder->build(eventType: 'HOUSEHOLD_INVITATION_CREATED', userId: (string) $inviter->id, data: [
+                'invitationId' => $invitation->id,
+                'householdId' => $household->id,
+                'invitedBy' => $inviter->id,
+                'email' => $invitation->email,
+                'role' => $invitation->role,
+                'expiresAt' => Carbon::parse($invitation->expires_at)->toISOString(),
+            ], );
+
+            $this->notificationEventEmitter->emit($event);
+
+            return $invitation;
         });
     }
 
@@ -79,7 +95,6 @@ class HouseholdInvitationService
     public function accept(string $token, User $user): HouseholdMember
     {
         return DB::transaction(function () use ($token, $user): HouseholdMember {
-
             /** @var HouseholdInvitation|null $invitation */
             $invitation = $this->repository->findByToken($token);
 
@@ -88,35 +103,27 @@ class HouseholdInvitationService
             }
 
             if (! $invitation->isPending()) {
-                throw ApiException::conflict(
-                    'This invitation is no longer pending.'
-                );
+                throw ApiException::conflict('This invitation is no longer pending.');
             }
 
             if ($invitation->isExpired()) {
                 $this->expire($invitation);
 
-                throw ApiException::badRequest(
-                    'This invitation has expired.'
-                );
+                throw ApiException::badRequest('This invitation has expired.');
             }
 
             if (
                 strtolower($invitation->email)
                 !== strtolower($user->email)
             ) {
-                throw ApiException::forbidden(
-                    'This invitation does not belong to the authenticated user.'
-                );
+                throw ApiException::forbidden('This invitation does not belong to the authenticated user.');
             }
 
             /** @var Household $household */
             $household = $invitation->household;
 
             if ($household->owner_id === $user->id) {
-                throw ApiException::conflict(
-                    'The household owner cannot accept an invitation.'
-                );
+                throw ApiException::conflict('The household owner cannot accept an invitation.');
             }
 
             /** @var HouseholdMember|null $existingMember */
@@ -125,9 +132,7 @@ class HouseholdInvitationService
                 ->first();
 
             if ($existingMember) {
-                throw ApiException::conflict(
-                    'You are already a member of this household.'
-                );
+                throw ApiException::conflict('You are already a member of this household.');
             }
 
             /** @var HouseholdMember $member */
@@ -140,7 +145,18 @@ class HouseholdInvitationService
             $invitation->status = 'accepted';
             $invitation->save();
 
-            return $member->load('user', 'household');
+            $member = $member->load('user', 'household');
+
+            $event = $this->notificationEventBuilder->build(eventType: 'HOUSEHOLD_INVITATION_ACCEPTED', userId: (string) $user->id, data: [
+                'invitationId' => $invitation->id,
+                'householdId' => $household->id,
+                'userId' => $user->id,
+                'role' => $member->role,
+            ], );
+
+            $this->notificationEventEmitter->emit($event);
+
+            return $member;
         });
     }
 
@@ -158,32 +174,36 @@ class HouseholdInvitationService
             }
 
             if (! $invitation->isPending()) {
-                throw ApiException::conflict(
-                    'This invitation is no longer pending.'
-                );
+                throw ApiException::conflict('This invitation is no longer pending.');
             }
 
             if ($invitation->isExpired()) {
                 $this->expire($invitation);
 
-                throw ApiException::badRequest(
-                    'This invitation has expired.'
-                );
+                throw ApiException::badRequest('This invitation has expired.');
             }
 
             if (
                 strtolower($invitation->email)
                 !== strtolower($user->email)
             ) {
-                throw ApiException::forbidden(
-                    'This invitation does not belong to the authenticated user.'
-                );
+                throw ApiException::forbidden('This invitation does not belong to the authenticated user.');
             }
 
             $invitation->status = 'declined';
             $invitation->save();
 
-            return $invitation->load('inviter', 'household');
+            $invitation = $invitation->load('inviter', 'household');
+
+            $event = $this->notificationEventBuilder->build(eventType: 'HOUSEHOLD_INVITATION_DECLINED', userId: (string) $user->id, data: [
+                'invitationId' => $invitation->id,
+                'householdId' => $invitation->household_id,
+                'userId' => $user->id,
+            ], );
+
+            $this->notificationEventEmitter->emit($event);
+
+            return $invitation;
         });
     }
 
@@ -198,7 +218,18 @@ class HouseholdInvitationService
 
         $invitation->status = 'declined';
 
-        return $invitation->save();
+        $saved = $invitation->save();
+
+        if ($saved) {
+            $event = $this->notificationEventBuilder->build(eventType: 'HOUSEHOLD_INVITATION_CANCELLED', userId: (string) $invitation->invited_by, data: [
+                'invitationId' => $invitation->id,
+                'householdId' => $invitation->household_id,
+            ], );
+
+            $this->notificationEventEmitter->emit($event);
+        }
+
+        return $saved;
     }
 
     /**
@@ -212,6 +243,17 @@ class HouseholdInvitationService
 
         $invitation->status = 'expired';
 
-        return $invitation->save();
+        $saved = $invitation->save();
+
+        if ($saved) {
+            $event = $this->notificationEventBuilder->build(eventType: 'HOUSEHOLD_INVITATION_EXPIRED', userId: (string) $invitation->invited_by, data: [
+                'invitationId' => $invitation->id,
+                'householdId' => $invitation->household_id,
+            ], );
+
+            $this->notificationEventEmitter->emit($event);
+        }
+
+        return $saved;
     }
 }

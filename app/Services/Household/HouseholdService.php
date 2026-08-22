@@ -1,14 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services\Household;
 
 use App\Models\Household;
 use App\Repositories\HouseholdRepository;
+use App\Services\Notification\NotificationEventBuilder;
+use App\Services\Notification\NotificationEventEmitter;
 use Illuminate\Database\Eloquent\Collection;
 
-class HouseholdService
+final class HouseholdService
 {
-    public function __construct(private readonly HouseholdRepository $repository) {}
+    public function __construct(private readonly HouseholdRepository $repository, private readonly NotificationEventBuilder $notificationEventBuilder, private readonly NotificationEventEmitter $notificationEventEmitter) {}
 
     /**
      * Get all households accessible by the user.
@@ -18,6 +22,14 @@ class HouseholdService
     public function forUser(int $userId): Collection
     {
         return $this->repository->forUser($userId);
+    }
+
+    /**
+     * Determine whether a user can access a household.
+     */
+    public function canAccess(int $userId, string $householdId): bool
+    {
+        return $this->repository->isAccessibleByUser($householdId, $userId);
     }
 
     /**
@@ -32,6 +44,14 @@ class HouseholdService
         /** @var Household $household */
         $household = $this->repository->create($data);
 
+        $event = $this->notificationEventBuilder->build(eventType: 'HOUSEHOLD_CREATED', userId: (string) $userId, data: [
+            'householdId' => $household->id,
+            'ownerId' => $userId,
+            'name' => $household->name,
+        ], );
+
+        $this->notificationEventEmitter->emit($event);
+
         return $household;
     }
 
@@ -44,7 +64,17 @@ class HouseholdService
     {
         $household->update($data);
 
-        return $household->refresh();
+        $household = $household->refresh();
+
+        $event = $this->notificationEventBuilder->build(eventType: 'HOUSEHOLD_UPDATED', userId: (string) $household->owner_id, data: [
+            'householdId' => $household->id,
+            'ownerId' => $household->owner_id,
+            'changes' => $data,
+        ], );
+
+        $this->notificationEventEmitter->emit($event);
+
+        return $household;
     }
 
     /**
@@ -52,6 +82,20 @@ class HouseholdService
      */
     public function delete(Household $household): bool
     {
-        return (bool) $household->delete();
+        $householdId = $household->id;
+        $ownerId = $household->owner_id;
+
+        $deleted = (bool) $household->delete();
+
+        if ($deleted) {
+            $event = $this->notificationEventBuilder->build(eventType: 'HOUSEHOLD_DELETED', userId: (string) $ownerId, data: [
+                'householdId' => $householdId,
+                'ownerId' => $ownerId,
+            ], );
+
+            $this->notificationEventEmitter->emit($event);
+        }
+
+        return $deleted;
     }
 }
